@@ -1,7 +1,13 @@
-#include "lidar_data/node_inspector.hpp"
+#include "lidar_data/cloud_inspector.hpp"
 
-// TODO: init ROS -> create node -> create CloudInspector(node) -> spin -> shutdown
-int main()
+#include <memory>
+#include <rclcpp/executors.hpp>
+#include <rclcpp/utilities.hpp>
+
+int main(int argc, char **argv)
 {
-  return 0;
+    rclcpp::init(argc, argv);
+    rclcpp::spin(std::make_shared<lidar_data::CloudInspector>());
+    rclcpp::shutdown();
+    return 0;
 }
