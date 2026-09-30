@@ -1,10 +1,12 @@
 #include "lidar_data/cloud_inspector.hpp"
+#include "lidar_data/cloud_layout.hpp"
 
 namespace lidar_data {
 
 namespace {
 
 constexpr char kCloudTopic[] = "/utlidar/cloud";
+constexpr int kLogPeriodMs = 2000;
 
 }  // namespace
 
@@ -18,8 +20,8 @@ CloudInspector::CloudInspector() : Node("cloud_inspector")
 
 void CloudInspector::on_cloud(sensor_msgs::msg::PointCloud2::ConstSharedPtr cloud)
 {
-    // TODO: log the cloud layout (frame_id, width, height, point_step, row_step, is_dense, fields).
-    RCLCPP_INFO_THROTTLE(get_logger(), *get_clock(), 2000, "cloud received: %zu bytes", cloud->data.size());
+    // logging macro that limits how often a message is printed
+    RCLCPP_INFO_THROTTLE(get_logger(), *get_clock(), kLogPeriodMs, "%s", describe_layout(*cloud).c_str());
 }
 
 }  // namespace lidar_data
