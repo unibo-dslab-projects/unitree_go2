@@ -15,6 +15,7 @@ find_package(sensor_msgs REQUIRED)
 
 add_executable(cloud_inspector
   src/main.cpp
+  src/cloud_inspector.cpp
 )
 
 # Project own headers: lets the code write #include "lidar_data/...".
