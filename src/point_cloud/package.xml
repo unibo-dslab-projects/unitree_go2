@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>point_cloud</name>
+  <version>0.1.0</version>
+  <description>Build a typed point cloud from the lidar data of the Unitree Go2 L1 lidar</description>
+  <maintainer email="nick.ghignatti@gmail.com">Nicolò Ghignatti</maintainer>
+  <license>GPL-3.0</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <depend>rclcpp</depend>
+  <depend>sensor_msgs</depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>
