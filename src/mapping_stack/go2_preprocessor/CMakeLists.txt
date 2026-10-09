@@ -15,6 +15,7 @@ find_package(sensor_msgs REQUIRED)
 
 add_executable(go2_preprocessor
     src/main.cpp
+    src/preprocessor_node.cpp
     src/convertor.cpp
     src/schemas.cpp
     src/robot_utils.cpp
