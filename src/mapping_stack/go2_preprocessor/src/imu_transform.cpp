@@ -18,6 +18,14 @@ namespace go2_preprocessor {
         return kImuToBody * vector;
     }
 
+    Eigen::Quaternionf imu_orientation_to_body(const Eigen::Quaternionf &orientation)
+    {
+        // world <- body = (world <- IMU) * (IMU <- body), and IMU <- body is the
+        // inverse of kImuToBody. CMU multiplies on the left with a +15.1 deg
+        // tilt instead, which does not match its own gyroscope rotation.
+        return orientation * kImuToBody.conjugate();
+    }
+
     Eigen::Vector3f calibrate_gyro(const Eigen::Vector3f &angular_velocity, const GyroCalibration &calibration)
     {
         Eigen::Vector3f corrected = angular_velocity - calibration.bias;

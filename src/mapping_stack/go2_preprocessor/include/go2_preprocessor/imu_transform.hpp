@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Eigen/Core>
+#include <Eigen/Geometry>
 
 namespace go2_preprocessor {
     // Gyroscope corrections, all in the body frame.
@@ -14,6 +15,10 @@ namespace go2_preprocessor {
     // Turns a gyroscope or accelerometer reading from the IMU frame (mounted
     // upside down and tilted 15.1 deg) into the body frame (x forward, y left, z up).
     Eigen::Vector3f imu_to_body(const Eigen::Vector3f &vector);
+
+    // Turns the IMU's own orientation estimate (IMU frame to world) into the
+    // body's orientation in the same world frame. A level robot gives identity.
+    Eigen::Quaternionf imu_orientation_to_body(const Eigen::Quaternionf &orientation);
 
     // Subtracts the bias, then adds the leak computed from the corrected z.
     // Expects a reading already in the body frame.

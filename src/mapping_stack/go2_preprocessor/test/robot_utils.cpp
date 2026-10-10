@@ -91,6 +91,9 @@ TEST(RemoveRobotPoints, EmptyInputGivesEmptyOutput)
     EXPECT_TRUE(remove_robot_points({}, kUnitBox).empty());
 }
 
+// CMU's robot box, the node's default. The raw points above were chosen for it.
+constexpr Box kGo2RobotBody{-0.7F, -0.1F, -0.3F, 0.3F, -0.646825F, -0.046825F};
+
 // The robot box is defined in the body frame, so the filter must run after the
 // turn. Swapping the order would keep the robot's back and drop the decoy.
 TEST(PreprocessCloud, RemovesTheRobotsBackOnlyAfterTheTurn)
@@ -99,7 +102,7 @@ TEST(PreprocessCloud, RemovesTheRobotsBackOnlyAfterTheTurn)
     cloud.frame_id = "utlidar_lidar";
     cloud.points = {kRawWallAhead, kRawRobotBack, kRawBoxDecoy};
 
-    preprocess_cloud(cloud);
+    preprocess_cloud(cloud, kGo2RobotBody);
 
     ASSERT_EQ(cloud.points.size(), 2U);
     EXPECT_FLOAT_EQ(cloud.points[0].intensity, 1.0F);  // wall
@@ -111,7 +114,7 @@ TEST(PreprocessCloud, EmptyCloudStaysEmpty)
 {
     PointCloud cloud;
 
-    preprocess_cloud(cloud);
+    preprocess_cloud(cloud, kGo2RobotBody);
 
     EXPECT_TRUE(cloud.points.empty());
     EXPECT_EQ(cloud.frame_id, "body");

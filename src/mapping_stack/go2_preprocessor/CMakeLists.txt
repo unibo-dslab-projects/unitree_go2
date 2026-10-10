@@ -12,6 +12,7 @@ find_package(rclcpp REQUIRED)
 find_package(Eigen3 REQUIRED)
 find_package(ament_cmake REQUIRED)
 find_package(sensor_msgs REQUIRED)
+find_package(geometry_msgs REQUIRED)
 
 add_executable(go2_preprocessor
     src/main.cpp
@@ -24,7 +25,7 @@ add_executable(go2_preprocessor
 
 target_include_directories(go2_preprocessor PRIVATE include)
 
-ament_target_dependencies(go2_preprocessor rclcpp sensor_msgs)
+ament_target_dependencies(go2_preprocessor rclcpp sensor_msgs geometry_msgs)
 target_link_libraries(go2_preprocessor Eigen3::Eigen)
 
 install(TARGETS go2_preprocessor DESTINATION lib/${PROJECT_NAME})

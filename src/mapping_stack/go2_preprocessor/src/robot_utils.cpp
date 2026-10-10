@@ -10,8 +10,6 @@ namespace go2_preprocessor {
     constexpr float kLidarToBodyAngle = 2.87820258F;
     // CMU subtracts the lidar height offset, hence the minus sign.
     constexpr float kLidarToBodyShiftZ = -0.046825F;
-    // Region where the lidar sees the robot's own back, in the body frame.
-    constexpr Box kRobotBody{-0.7F, -0.1F, -0.3F, 0.3F, -0.646825F, -0.046825F};
     }  // namespace
 
     void lidar_to_body(PointCloud &cloud)
@@ -38,9 +36,9 @@ namespace go2_preprocessor {
         return kept;
     }
 
-    void preprocess_cloud(PointCloud &cloud)
+    void preprocess_cloud(PointCloud &cloud, const Box &robot_body)
     {
         lidar_to_body(cloud);
-        cloud.points = remove_robot_points(cloud.points, kRobotBody);
+        cloud.points = remove_robot_points(cloud.points, robot_body);
     }
 }

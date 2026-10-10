@@ -4,6 +4,7 @@
 #include <gtest/gtest.h>
 
 #include <Eigen/Core>
+#include <Eigen/Geometry>
 
 namespace go2_preprocessor {
 namespace {
@@ -44,6 +45,32 @@ TEST(ImuToBody, GravityAtRestPointsUp)
     EXPECT_NEAR(body.x(), 0.0F, kTolerance);
     EXPECT_NEAR(body.y(), 0.0F, kTolerance);
     EXPECT_NEAR(body.z(), 9.81F, kTolerance);
+}
+
+constexpr float kPi = 3.14159265F;
+
+// How the IMU sits on the robot: what it reports as its own orientation when
+// the robot stands level and faces the world's x axis.
+const Eigen::Quaternionf kLevelRobotImu =
+    Eigen::AngleAxisf(-15.1F * kPi / 180.0F, Eigen::Vector3f::UnitY()) *
+    Eigen::AngleAxisf(kPi, Eigen::Vector3f::UnitX());
+
+TEST(ImuOrientationToBody, LevelRobotGivesNoRotation)
+{
+    const Eigen::Quaternionf body = imu_orientation_to_body(kLevelRobotImu);
+
+    EXPECT_NEAR(body.angularDistance(Eigen::Quaternionf::Identity()), 0.0F, kTolerance);
+}
+
+// A robot turned 90 deg left must come out turned 90 deg left. Multiplying on
+// the wrong side still passes the level test above, but fails this one.
+TEST(ImuOrientationToBody, RobotYawComesThrough)
+{
+    const Eigen::Quaternionf yaw(Eigen::AngleAxisf(kPi / 2.0F, Eigen::Vector3f::UnitZ()));
+
+    const Eigen::Quaternionf body = imu_orientation_to_body(yaw * kLevelRobotImu);
+
+    EXPECT_NEAR(body.angularDistance(yaw), 0.0F, kTolerance);
 }
 
 // Bias z is not zero on purpose: corrected z is 0.4, raw z is 0.5. Taking the
