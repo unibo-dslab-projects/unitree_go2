@@ -19,11 +19,13 @@ add_executable(go2_preprocessor
     src/convertor.cpp
     src/schemas.cpp
     src/robot_utils.cpp
+    src/imu_transform.cpp
 )
 
 target_include_directories(go2_preprocessor PRIVATE include)
 
 ament_target_dependencies(go2_preprocessor rclcpp sensor_msgs)
+target_link_libraries(go2_preprocessor Eigen3::Eigen)
 
 install(TARGETS go2_preprocessor DESTINATION lib/${PROJECT_NAME})
 
@@ -51,6 +53,13 @@ if(BUILD_TESTING)
     src/schemas.cpp
   )
   target_include_directories(test_robot_utils PRIVATE include)
+
+  ament_add_gtest(test_imu_transform
+    test/imu_transform.cpp
+    src/imu_transform.cpp
+  )
+  target_include_directories(test_imu_transform PRIVATE include)
+  target_link_libraries(test_imu_transform Eigen3::Eigen)
 
   find_package(ament_lint_auto REQUIRED)
   # the following line skips the linter which checks for copyrights
