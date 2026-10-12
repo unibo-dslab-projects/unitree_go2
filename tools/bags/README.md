@@ -17,8 +17,12 @@ from the bag plan, so every bag of a type has the same topics, checks and name.
 | `record_calib.sh` | cloud, imu, cloud_base, sportmodestate (+ cloud_deskewed, robot_odom, tf, tf_static if present) | by itself after 20 s |
 | `record_standstill.sh` | cloud, imu, cloud_base, sportmodestate | by itself after 120 s |
 | `record_lying.sh` | cloud, imu, cloud_base, sportmodestate | by itself after 60 s |
-| `record_spin.sh` | cloud, imu, cloud_base, sportmodestate | Ctrl-C |
-| `record_line.sh`, `record_loop.sh`, `record_floor.sh`, `record_speeds.sh` | cloud, imu, sportmodestate (+ robot_odom if present) | Ctrl-C |
+| `record_spin.sh` | cloud, imu, cloud_base, sportmodestate | Ctrl-C, or after `[seconds]` |
+| `record_line.sh`, `record_loop.sh`, `record_floor.sh`, `record_speeds.sh` | cloud, imu, sportmodestate (+ robot_odom if present) | Ctrl-C, or after `[seconds]` |
+
+The robot stands still in the first three, so their length is part of the measurement (bias is
+averaged over a known time) and a timer ends them. In the others the robot walks, and the bag ends
+when the task does (back on the start mark, end of the tape), which only the operator knows.
 
 - `/sportmodestate` holds the gyroscope and accelerometer of the robot body, the reference for the
   lidar IMU rotation and biases.
@@ -37,8 +41,16 @@ tools/bags/push.sh
 On the robot (`ssh go2`, then `tmux new -s rec`):
 
 ```bash
-~/tools/bags/record_spin.sh
+~/tools/bags/record_spin.sh         # stop with Ctrl-C
+~/tools/bags/record_spin.sh 60      # stops by itself after 60 s; Ctrl-C still stops it earlier
+~/tools/bags/record_spin.sh --help
 ```
+
+The optional length in seconds works for every type: on the walking types it lets one person record
+and drive the robot with the remote without reaching for the keyboard; on the others it replaces the
+default length (for example `record_standstill.sh 300`). It must be more than 10 s. On a walking
+type with a length, the screen says GO after the first 5 s and KEEP THE ROBOT STILL for the last 5 s,
+so plan the scenario to end before then.
 
 The script:
 

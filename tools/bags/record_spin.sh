@@ -11,4 +11,4 @@ INSTRUCTIONS="turn in place slowly: 2 full turns left, 5 s still, 2 full turns r
 NOTES_FIELDS=("Start heading (tape arrow on the floor)")
 
 source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
-record_bag
+record_bag "$@"

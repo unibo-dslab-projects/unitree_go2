@@ -11,4 +11,4 @@ INSTRUCTIONS="walk straight along the taped line and stop on its end"
 NOTES_FIELDS=("Line length (m)")
 
 source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
-record_bag
+record_bag "$@"

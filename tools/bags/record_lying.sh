@@ -10,4 +10,4 @@ INSTRUCTIONS="robot lies down with motors relaxed, nobody touches it"
 NOTES_FIELDS=()
 
 source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
-record_bag
+record_bag "$@"

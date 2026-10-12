@@ -11,4 +11,4 @@ INSTRUCTIONS="walk the loop twice, once slow and once fast, stopping on the star
 NOTES_FIELDS=("Slow speed setting" "Fast speed setting" "Start mark")
 
 source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
-record_bag
+record_bag "$@"

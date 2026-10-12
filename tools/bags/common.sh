@@ -9,6 +9,10 @@
 #   INSTRUCTIONS     what the robot does, shown before and during the recording
 #   NOTES_FIELDS     array of things to measure or write down, asked after the recording
 #
+# Every record_<type>.sh takes one optional argument, a length in seconds: the bag then stops by
+# itself after that time, which helps when one person records and drives the robot. Ctrl-C still
+# stops it earlier. Without the argument, DURATION applies.
+#
 # Environment overrides:
 #   BAG_DIR                 where bags go (default ~/bags)
 #   ROS_SETUP               sourced when ros2 is not on PATH (default ~/unitree_ros2/setup.sh)
@@ -151,6 +155,10 @@ ticker() {
             message="KEEP THE ROBOT STILL"
         elif [ "$DURATION" = manual ]; then
             message="GO: $INSTRUCTIONS. At the end: $STILL_SECONDS s still, then Ctrl-C"
+        elif ((MOVING && DURATION - elapsed <= STILL_SECONDS)); then
+            message="KEEP THE ROBOT STILL, stops in $((DURATION - elapsed)) s"
+        elif ((MOVING)); then
+            message="GO: $INSTRUCTIONS. $((DURATION - elapsed)) s left, the last $STILL_SECONDS s still"
         else
             message="recording, $((DURATION - elapsed)) s left"
         fi
@@ -269,17 +277,41 @@ print_summary() {
     info "Copy it on the laptop, outside the container:  tools/bags/fetch.sh $name"
 }
 
+# record_bag [seconds]: the type script passes its own arguments.
 record_bag() {
     [ -n "${TYPE:-}" ] || die "TYPE is not set"
     [ -n "${DURATION:-}" ] || die "DURATION is not set"
     ((${#TOPICS[@]} > 0)) || die "TOPICS is empty"
+
+    # The types stopped by hand are the ones where the robot moves.
+    MOVING=0
+    [ "$DURATION" = manual ] && MOVING=1
+    (($# <= 1)) || die "usage: $(basename "$0") [seconds]"
+    case "${1:-}" in
+        "") ;;
+        -h | --help)
+            if [ "$DURATION" = manual ]; then
+                info "usage: $(basename "$0") [seconds]   (without seconds: stop with Ctrl-C)"
+            else
+                info "usage: $(basename "$0") [seconds]   (without seconds: $DURATION s)"
+            fi
+            exit 0
+            ;;
+        *)
+            [[ "$1" =~ ^[0-9]+$ ]] || die "the length must be a whole number of seconds, got '$1'"
+            # 10#: a leading zero must not turn the number into octal
+            DURATION=$((10#$1))
+            ((DURATION > 2 * STILL_SECONDS)) ||
+                die "the length must be more than $((2 * STILL_SECONDS)) s ($STILL_SECONDS s still at the start and at the end)"
+            ;;
+    esac
 
     info "=== $TYPE bag ==="
     info "Scenario: $INSTRUCTIONS"
     if [ "$DURATION" = manual ]; then
         info "Length: you stop it with Ctrl-C (up to about $MAX_MINUTES min)"
     else
-        info "Length: $DURATION s, stops by itself"
+        info "Length: $DURATION s, stops by itself (Ctrl-C stops it earlier)"
     fi
     if ((${#NOTES_FIELDS[@]} > 0)); then
         info "Have ready for the notes:"

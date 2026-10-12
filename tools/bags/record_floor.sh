@@ -11,4 +11,4 @@ INSTRUCTIONS="walk every room and corridor that belongs in the plan, back to the
 NOTES_FIELDS=("Rooms and corridors covered" "Room dimensions (tape or laser meter)" "Photo file names")
 
 source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
-record_bag
+record_bag "$@"

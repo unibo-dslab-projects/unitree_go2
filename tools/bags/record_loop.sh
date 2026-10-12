@@ -11,4 +11,4 @@ INSTRUCTIONS="walk a closed loop and stop exactly on the start mark, facing the 
 NOTES_FIELDS=("Start mark" "Room dimensions")
 
 source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
-record_bag
+record_bag "$@"

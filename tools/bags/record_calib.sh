@@ -11,4 +11,4 @@ INSTRUCTIONS="robot stands on a flat floor, nose square to a flat wall about 1.5
 NOTES_FIELDS=("Lidar height above the floor (m)" "Lidar to wall distance (m)" "Photo file name")
 
 source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
-record_bag
+record_bag "$@"
