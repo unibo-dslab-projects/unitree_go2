@@ -29,8 +29,9 @@ Both are on the lab Wi-Fi `dslab-robot`.
 | `/utlidar/cloud` | `sensor_msgs/msg/PointCloud2` | `utlidar_lidar` | about 15.4 Hz | 360 to 4180 points per message, 32 bytes per point |
 | `/utlidar/imu` | `sensor_msgs/msg/Imu` | `utlidar_imu` | about 250 Hz (11706 messages in 46.9 s, 2026-09-28) | a few hundred bytes per message |
 
-For the calibration bag only, also record these if `ros2 topic list` shows them on the robot:
-`/utlidar/cloud_deskewed`, `/utlidar/robot_odom`, `/tf`, `/tf_static`.
+Calibration needs no bag: `go2_calibration` drives the robot and measures live (see
+[its README](../../src/mapping_stack/go2_calibration/README.md)). It replaced the `calib`,
+`standstill` and `spin` bags on 2026-10-13.
 
 ### Disk space
 
@@ -209,10 +210,7 @@ Rules for every bag:
 
 | Bag | What the robot does | Length | What it is for | Write down |
 |---|---|---|---|---|
-| `calib` | Stands on a flat floor, nose square to a flat wall about 1.5 m away. Nobody moves. Record the extra calibration topics too. | 20 s | Lidar and IMU mount rotation: the CMU transform leaves the floor tilted by about 25 degrees on our bags (E4) | Lidar height above the floor, lidar-to-wall distance, a photo |
-| `standstill` | Stands (motors on, standing pose), nobody touches it | 120 s | Gyroscope and accelerometer bias and noise (IMU calibration) | |
-| `lying` (optional) | Lies down, motors relaxed | 60 s | Bias without leg-motor vibration, to compare with `standstill` | |
-| `spin` | Turns in place slowly: 2 full turns left, 5 s still, 2 full turns right | about 60 s | Gyroscope z scale and the z-to-x/y leak (CMU uses 0.15 and -0.28); Point-LIO under pure rotation | Start heading (tape arrow on the floor) |
+| `lying` (optional) | Lies down, motors relaxed | 60 s | Bias without leg-motor vibration, to compare with the standing bias of `go2_calibration` | |
 | `line` | Walks straight along a taped line of known length, then stops | 30 to 60 s | Scale and drift: Point-LIO distance against the tape | Line length |
 | `loop` | Walks a closed loop in one room or corridor and stops exactly on the start mark, facing the same way | 2 to 3 min | Drift: the gap between start and end pose of the estimated path | Start mark, room dimensions |
 | `floor` | Walks the whole floor: every room and corridor that should be in the plan, back to the start mark | 5 to 15 min | The thesis dataset: map, then floor plan | Room dimensions (tape or laser meter) for the evaluation, photos |

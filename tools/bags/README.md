@@ -14,20 +14,20 @@ from the bag plan, so every bag of a type has the same topics, checks and name.
 
 | Script | Topics | Stops |
 |---|---|---|
-| `record_calib.sh` | cloud, imu, cloud_base, sportmodestate (+ cloud_deskewed, robot_odom, tf, tf_static if present) | by itself after 20 s |
-| `record_standstill.sh` | cloud, imu, cloud_base, sportmodestate | by itself after 120 s |
 | `record_lying.sh` | cloud, imu, cloud_base, sportmodestate | by itself after 60 s |
-| `record_spin.sh` | cloud, imu, cloud_base, sportmodestate | Ctrl-C, or after `[seconds]` |
 | `record_line.sh`, `record_loop.sh`, `record_floor.sh`, `record_speeds.sh` | cloud, imu, sportmodestate (+ robot_odom if present) | Ctrl-C, or after `[seconds]` |
 
-The robot stands still in the first three, so their length is part of the measurement (bias is
-averaged over a known time) and a timer ends them. In the others the robot walks, and the bag ends
-when the task does (back on the start mark, end of the tape), which only the operator knows.
+The robot lies still in the first, so its length is part of the measurement (bias is averaged over
+a known time) and a timer ends it. In the others the robot walks, and the bag ends when the task
+does (back on the start mark, end of the tape), which only the operator knows.
 
-- `/sportmodestate` holds the gyroscope and accelerometer of the robot body, the reference for the
-  lidar IMU rotation and biases.
-- `/utlidar/cloud_base` is the cloud already turned into the body frame by the Unitree firmware; it
-  checks the lidar extrinsic in every calibration session (a firmware update could change it).
+The calibration (lidar mount, IMU rotation, gyroscope bias and leak, range offset) needs no bag: the
+`go2_calibration` program drives the robot and measures live
+([src/mapping_stack/go2_calibration](../../src/mapping_stack/go2_calibration/README.md)). The
+`calib`, `standstill` and `spin` scripts it replaces were removed on 2026-10-13.
+
+- `/sportmodestate` holds the gyroscope and accelerometer of the robot body.
+- `/utlidar/cloud_base` is the cloud already turned into the body frame by the Unitree firmware.
 - `/utlidar/robot_odom` is Unitree's own odometry, to compare Point-LIO's drift with.
 
 ## Use
@@ -41,20 +41,22 @@ tools/bags/push.sh
 On the robot (`ssh go2`, then `tmux new -s rec`):
 
 ```bash
-~/tools/bags/record_spin.sh         # stop with Ctrl-C
-~/tools/bags/record_spin.sh 60      # stops by itself after 60 s; Ctrl-C still stops it earlier
-~/tools/bags/record_spin.sh --help
+~/tools/bags/record_loop.sh         # stop with Ctrl-C
+~/tools/bags/record_loop.sh 180     # stops by itself after 180 s; Ctrl-C still stops it earlier
+~/tools/bags/record_loop.sh --help
 ```
 
 The optional length in seconds works for every type: on the walking types it lets one person record
-and drive the robot with the remote without reaching for the keyboard; on the others it replaces the
-default length (for example `record_standstill.sh 300`). It must be more than 10 s. On a walking
+and drive the robot with the remote without reaching for the keyboard; on `lying` it replaces the
+default length (for example `record_lying.sh 300`). It must be more than 10 s. On a walking
 type with a length, the screen says GO after the first 5 s and KEEP THE ROBOT STILL for the last 5 s,
 so plan the scenario to end before then.
 
 The script:
 
-1. loads ROS 2 if needed (`~/unitree_ros2/setup.sh`, override with `ROS_SETUP`);
+1. loads ROS 2 with the Unitree messages (`~/unitree_ros2/setup.sh`, override with `ROS_SETUP`),
+   always: the robot's `~/.bashrc` loads ROS 2 without them, and then `/sportmodestate` cannot be
+   recorded;
 2. stops if another recorder runs, a required topic is missing, the computer clock and the sensor
    clock disagree by more than 5 s, `/utlidar/cloud` is far from 15.4 Hz, or the disk is too full;
 3. names the bag `~/bags/<date>_<type>_<NN>`, never overwriting one;
@@ -67,9 +69,9 @@ The script:
 Back on the laptop, outside the container:
 
 ```bash
-tools/bags/fetch.sh 2026-10-14_spin_01
+tools/bags/fetch.sh 2026-10-14_loop_01
 tools/bags/fetch.sh '2026-10-14_*'                 # quoted: the robot expands the pattern
-tools/bags/fetch.sh --check ../bags/2026-10-14_spin_01   # check a bag already on the laptop
+tools/bags/fetch.sh --check ../bags/2026-10-14_loop_01   # check a bag already on the laptop
 ```
 
 `fetch.sh` prints the command to free the space on the robot once a copy is complete; it never
@@ -90,6 +92,7 @@ deletes anything itself.
 ## Notes
 
 - Playing a bag with `/sportmodestate` on the laptop needs the `unitree_go` messages in the
-  container; without them, play the other topics only (`--topics /utlidar/cloud /utlidar/imu`).
+  container (see [go2_calibration](../../src/mapping_stack/go2_calibration/README.md), "Laptop");
+  without them, play the other topics only (`--topics /utlidar/cloud /utlidar/imu`).
 - To add a bag type, copy a `record_<type>.sh`, change its variables, and add the expected rate of
   any new topic to `EXPECTED_HZ` in `common.sh`.

@@ -15,7 +15,7 @@
 #
 # Environment overrides:
 #   BAG_DIR                 where bags go (default ~/bags)
-#   ROS_SETUP               sourced when ros2 is not on PATH (default ~/unitree_ros2/setup.sh)
+#   ROS_SETUP               ROS 2 with the Unitree messages, always sourced (default ~/unitree_ros2/setup.sh)
 #   ALLOW_CLOCK_MISMATCH=1  record even if the computer clock and the sensor clock disagree
 
 if [ -z "${BASH_VERSION:-}" ]; then
@@ -52,13 +52,14 @@ ask_yes_no() {
     [[ "$answer" == [yY]* ]]
 }
 
+# Loads ros2 with the Unitree messages (source ~/unitree_ros2/setup.sh), or dies if it cannot be found.
+# Always sourced: the robot's ~/.bashrc already puts ros2 on PATH, but without the unitree_go
+# messages, and the recorder then fails on /sportmodestate (2026-10-13).
 load_ros() {
-    if ! command -v ros2 >/dev/null 2>&1; then
-        [ -f "$ROS_SETUP" ] || die "ros2 not found and $ROS_SETUP does not exist (set ROS_SETUP)"
-        # shellcheck disable=SC1090
-        source "$ROS_SETUP" >/dev/null
-    fi
-    command -v ros2 >/dev/null 2>&1 || die "ros2 still not found after sourcing $ROS_SETUP"
+    [ -f "$ROS_SETUP" ] || die "$ROS_SETUP does not exist (set ROS_SETUP)"
+    # shellcheck disable=SC1090
+    source "$ROS_SETUP" >/dev/null
+    command -v ros2 >/dev/null 2>&1 || die "ros2 not found after sourcing $ROS_SETUP"
 }
 
 check_not_recording() {
@@ -117,6 +118,7 @@ check_cloud_rate() {
     fi
 }
 
+# Calculate estimated disk space needed for the bag, check that the bag directory exists and has enough free space.
 check_disk() {
     local minutes need_mib free_mib
     if [ "$DURATION" = manual ]; then
