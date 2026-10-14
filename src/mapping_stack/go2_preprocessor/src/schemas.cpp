@@ -19,7 +19,7 @@ namespace go2_preprocessor {
         z += shift;
     }
 
-    // Strict comparisons: a point exactly on a face counts as outside, as in CMU.
+    // strict comparisons: a point exactly on the box limits counts as outside, as in CMU.
     bool Box::contains(const Point &point) const
     {
         return min_x < point.x && point.x < max_x &&

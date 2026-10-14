@@ -4,8 +4,8 @@
 
 namespace go2_preprocessor {
     namespace {
-    // Go2 L1 mount and body geometry, from CMU autonomy_stack_go2
-    // Turn around the lidar's y axis that undoes the upside-down mount (180 deg)
+    // go2 L1 mount and body geometry, from CMU autonomy_stack_go2
+    // turn around the lidar's y axis that undoes the upside-down mount (180 deg)
     // and the 15.1 deg tilt in one go: 164.9 deg.
     constexpr float kLidarToBodyAngle = 2.87820258F;
     // CMU subtracts the lidar height offset, hence the minus sign.

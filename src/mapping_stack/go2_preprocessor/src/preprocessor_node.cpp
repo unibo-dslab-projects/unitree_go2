@@ -22,13 +22,11 @@ namespace go2_preprocessor {
     constexpr char kRawImuOutputTopic[] = "/utlidar/transformed_raw_imu";
     constexpr char kImuOutputTopic[] = "/utlidar/transformed_imu";
     constexpr char kBodyFrame[] = "body";
-    // Publishers keep the default reliable QoS: reliable subscribers (Point-LIO)
-    // and best-effort ones (RViz) can both connect to them.
     constexpr int kCloudQueueSize = 10;
     constexpr int kImuQueueSize = 50;  // the IMU publishes much faster than the lidar
     constexpr int kLogPeriodMs = 2000;
 
-    // The node reads its settings once at start-up, so a later `ros2 param set`
+    // the node reads its settings once at start-up, so a later `ros2 param set`
     // would be silently ignored. Read-only makes it fail with an error instead.
     rcl_interfaces::msg::ParameterDescriptor read_only()
     {
@@ -37,7 +35,7 @@ namespace go2_preprocessor {
         return descriptor;
     }
 
-    // ROS parameters have no float type: declared as double, stored as float.
+    /// ROS parameters have no float type: declared as double, stored as float (required by PointCloud2).
     float declare_float(rclcpp::Node &node, const std::string &name, double default_value)
     {
         return static_cast<float>(node.declare_parameter<double>(name, default_value, read_only()));
@@ -84,10 +82,8 @@ namespace go2_preprocessor {
 
     PreprocessorNode::PreprocessorNode() : Node("go2_preprocessor")
     {
-        // Defaults are CMU's (transform_everything.py; the leaks are the values
-        // it uses when no calibration file exists).
-
-        // Where the lidar sees the robot's own back, body frame, metres.
+        // TODO: use calibration result
+        // where the lidar sees the robot's own back, body frame, metres.
         robot_body_.min_x = declare_float(*this, "robot_box.min_x", -0.7);
         robot_body_.max_x = declare_float(*this, "robot_box.max_x", -0.1);
         robot_body_.min_y = declare_float(*this, "robot_box.min_y", -0.3);
@@ -128,7 +124,6 @@ namespace go2_preprocessor {
     {
         PointCloud cloud;
 
-        // A broken message is skipped; an uncaught exception would stop the node.
         try {
             cloud = from_message(*message);
         } catch (const std::runtime_error &error) {
@@ -149,13 +144,13 @@ namespace go2_preprocessor {
 
     void PreprocessorNode::on_imu(sensor_msgs::msg::Imu::ConstSharedPtr message)
     {
-        // Calibration values are in the body frame, so rotate first.
+        // calibration values are in the body frame, so rotate first.
         const Eigen::Vector3f angular_velocity =
             calibrate_gyro(imu_to_body(to_eigen(message->angular_velocity)), gyro_calibration_);
         const Eigen::Vector3f acceleration =
             calibrate_accel(imu_to_body(to_eigen(message->linear_acceleration)), accel_bias_);
 
-        // A new message, so the covariances stay all zero ("unknown"), as in CMU.
+        // a new message, so the covariances stay all zero ("unknown"), as in CMU.
         sensor_msgs::msg::Imu body_imu;
         body_imu.header.stamp = message->header.stamp;
         body_imu.header.frame_id = kBodyFrame;

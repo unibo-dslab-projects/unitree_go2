@@ -7,7 +7,7 @@
 #include <Eigen/Core>
 
 namespace go2_calibration {
-    // The plane normal . p + distance = 0, with a unit normal pointing from the plane towards the
+    // the plane normal * p + distance = 0, with a unit normal pointing from the plane towards the
     // origin (the lidar): for the floor, "up".
     struct Plane {
         Eigen::Vector3d normal = Eigen::Vector3d::UnitZ();
@@ -30,7 +30,7 @@ namespace go2_calibration {
     // standing robot that is the floor. Empty if none is found.
     std::optional<Plane> find_floor(const std::vector<Eigen::Vector3d> &points, const FloorSearch &search = FloorSearch{});
 
-    // Angle between a direction and +z, in degrees: the tilt of a floor normal or of gravity.
+    // angle between a direction and +z, in degrees: the tilt of a floor normal or of gravity.
     double tilt_from_up_deg(const Eigen::Vector3d &direction);
 
     // A lidar whose every range reads `offset` metres too long bends a flat plane into a bowl: a
@@ -43,7 +43,7 @@ namespace go2_calibration {
         std::size_t points = 0;
     };
 
-    // Least squares of distance_i = distance + offset * cos(a_i) over the points within `band`
+    // least squares of distance_i = distance + offset * cos(a_i) over the points within `band`
     // metres of the plane (found with the offset still in it). Throws std::invalid_argument with
     // fewer than 3 such points or when they all see the plane at one angle.
     RangeOffset fit_range_offset(const std::vector<Eigen::Vector3d> &points, const Plane &plane, double band = 0.08);

@@ -41,12 +41,14 @@ if(BUILD_TESTING)
   )
   target_include_directories(test_convertor PRIVATE include)
   ament_target_dependencies(test_convertor sensor_msgs)
+  target_link_libraries(test_convertor Eigen3::Eigen)
 
   ament_add_gtest(test_schemas
     test/schemas.cpp
     src/schemas.cpp
   )
   target_include_directories(test_schemas PRIVATE include)
+  target_link_libraries(test_schemas Eigen3::Eigen)
 
   ament_add_gtest(test_robot_utils
     test/robot_utils.cpp
@@ -54,6 +56,7 @@ if(BUILD_TESTING)
     src/schemas.cpp
   )
   target_include_directories(test_robot_utils PRIVATE include)
+  target_link_libraries(test_robot_utils Eigen3::Eigen)
 
   ament_add_gtest(test_imu_transform
     test/imu_transform.cpp

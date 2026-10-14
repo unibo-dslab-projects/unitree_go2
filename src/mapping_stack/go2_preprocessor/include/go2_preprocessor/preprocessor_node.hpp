@@ -9,7 +9,7 @@
 #include <sensor_msgs/msg/point_cloud2.hpp>
 
 namespace go2_preprocessor {
-    // Takes the Go2 lidar and IMU data into the body frame for Point-LIO:
+    // takes the Go2 lidar and IMU data into the body frame for Point-LIO:
     // /utlidar/cloud without the robot's own points -> /utlidar/transformed_cloud,
     // /utlidar/imu calibrated -> /utlidar/transformed_raw_imu (full) and
     // /utlidar/transformed_imu (gyroscope only).

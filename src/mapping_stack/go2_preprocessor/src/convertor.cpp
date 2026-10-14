@@ -35,23 +35,22 @@ namespace go2_preprocessor {
     {
         PointCloud cloud;
 
-        // Copy ROS header metadata (frame ID and timestamp converted to nanoseconds)
+        // copy ROS header metadata (frame ID and timestamp converted to nanoseconds)
         cloud.frame_id = message.header.frame_id;
         cloud.stamp_ns = message.header.stamp.sec * kNanosecondsPerSecond + message.header.stamp.nanosec;
 
         const std::size_t point_count = static_cast<std::size_t>(message.width) * message.height;
 
-        // Return empty cloud if there are no points
         if (point_count == 0) {
             return cloud;
         }
 
-        // Validate buffer size to prevent out-of-bounds reads
+        // validate buffer size to prevent out-of-bounds reads
         if (message.data.size() < point_count * message.point_step) {
             throw std::runtime_error("cloud data is shorter than width x height x point_step");
         }
 
-        // Initialize ROS iterators to safely read individual point fields from raw binary data
+        // init ROS iterators to safely read individual point fields from raw binary data
         sensor_msgs::PointCloud2ConstIterator<float> x(message, "x");
         sensor_msgs::PointCloud2ConstIterator<float> y(message, "y");
         sensor_msgs::PointCloud2ConstIterator<float> z(message, "z");
@@ -59,10 +58,10 @@ namespace go2_preprocessor {
         sensor_msgs::PointCloud2ConstIterator<std::uint16_t> ring(message, "ring");
         sensor_msgs::PointCloud2ConstIterator<float> time(message, "time");
 
-        // Reserve memory to avoid repeated allocations
+        // reserve memory to avoid repeated allocations
         cloud.points.reserve(point_count);
 
-        // Iterate through all points, extract field values, and advance iterators
+        // iterate through all points, extract field values, and advance iterators
         for (std::size_t i = 0; i < point_count; ++i) {
             cloud.points.push_back(Point{*x, *y, *z, *intensity, *ring, *time});
 
@@ -83,12 +82,12 @@ namespace go2_preprocessor {
 
         sensor_msgs::msg::PointCloud2 message;
 
-        // Populate ROS header metadata from custom cloud structure
+        // populate ROS header metadata from custom cloud structure
         message.header.frame_id = cloud.frame_id;
         message.header.stamp.sec = static_cast<std::int32_t>(cloud.stamp_ns / kNanosecondsPerSecond);
         message.header.stamp.nanosec = static_cast<std::uint32_t>(cloud.stamp_ns % kNanosecondsPerSecond);
 
-        // Configure PointCloud2 layout dimensions and field layout with exact byte offsets
+        // configure PointCloud2 layout dimensions and field layout with exact byte offsets
         message.height = 1;
         message.width = static_cast<std::uint32_t>(cloud.points.size());
         message.fields = {
@@ -105,12 +104,11 @@ namespace go2_preprocessor {
         message.is_dense = true;  // Assumed dense initially; set to false if NaN/Inf found
         message.data.resize(message.row_step);
 
-        // Return empty message frame if no points exist
         if (cloud.points.empty()) {
             return message;
         }
 
-        // Initialize ROS iterators to write points into the raw binary data buffer
+        // initialize ROS iterators to write points into the raw binary data buffer
         sensor_msgs::PointCloud2Iterator<float> x(message, "x");
         sensor_msgs::PointCloud2Iterator<float> y(message, "y");
         sensor_msgs::PointCloud2Iterator<float> z(message, "z");
@@ -118,7 +116,6 @@ namespace go2_preprocessor {
         sensor_msgs::PointCloud2Iterator<std::uint16_t> ring(message, "ring");
         sensor_msgs::PointCloud2Iterator<float> time(message, "time");
 
-        // Write each point's data and check for non-finite coordinates
         for (const auto &point : cloud.points) {
             *x = point.x;
             *y = point.y;
@@ -127,7 +124,7 @@ namespace go2_preprocessor {
             *ring = point.ring;
             *time = point.time;
 
-            // Mark cloud as non-dense if any coordinate contains NaN or Inf
+            // mark cloud as non-dense if any coordinate contains NaN or Inf
             if (!is_finite(point)) {
                 message.is_dense = false;
             }

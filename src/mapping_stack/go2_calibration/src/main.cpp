@@ -90,7 +90,7 @@ namespace {
         return out.str();
     }
 
-    // Warns, then counts down; false if Ctrl-C came first.
+    // warns, then counts down; false if Ctrl-C came first.
     bool countdown(double sequence_s)
     {
         std::cout << "THE ROBOT WILL MOVE BY ITSELF for about " << static_cast<int>(sequence_s)
