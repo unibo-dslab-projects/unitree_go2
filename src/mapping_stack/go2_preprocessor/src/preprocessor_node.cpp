@@ -199,7 +199,7 @@ namespace go2_preprocessor {
 
         const std::size_t points_in = cloud.points.size();
 
-        preprocess_cloud(cloud, robot_body_);
+        preprocess_cloud(cloud, calibration_.lidar_to_body, robot_body_);
 
         cloud_publisher_->publish(to_message(cloud));
 
@@ -212,15 +212,16 @@ namespace go2_preprocessor {
     {
         // calibration values are in the body frame, so rotate first.
         const Eigen::Vector3f angular_velocity =
-            calibrate_gyro(imu_to_body(to_eigen(message->angular_velocity)), calibration_.gyro);
+            calibrate_gyro(imu_to_body(to_eigen(message->angular_velocity), calibration_.imu_to_body), calibration_.gyro);
         const Eigen::Vector3f acceleration =
-            calibrate_accel(imu_to_body(to_eigen(message->linear_acceleration)), accel_bias_);
+            calibrate_accel(imu_to_body(to_eigen(message->linear_acceleration), calibration_.imu_to_body), accel_bias_);
 
         // a new message, so the covariances stay all zero ("unknown"), as in CMU.
         sensor_msgs::msg::Imu body_imu;
         body_imu.header.stamp = message->header.stamp;
         body_imu.header.frame_id = kBodyFrame;
-        body_imu.orientation = to_quaternion_message(imu_orientation_to_body(to_eigen(message->orientation)));
+        body_imu.orientation =
+            to_quaternion_message(imu_orientation_to_body(to_eigen(message->orientation), calibration_.imu_to_body));
         body_imu.angular_velocity = to_vector_message(angular_velocity);
         body_imu.linear_acceleration = to_vector_message(acceleration);
 

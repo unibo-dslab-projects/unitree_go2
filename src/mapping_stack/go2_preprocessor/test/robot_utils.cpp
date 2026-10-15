@@ -5,9 +5,22 @@
 
 #include <vector>
 
+#include <Eigen/Geometry>
+
 namespace go2_preprocessor {
 namespace {
 constexpr float kTolerance = 1e-3F;
+
+// CMU's lidar mount, the node's default: 164.9 deg around the lidar's y axis
+// (upside down plus 15.1 deg tilt), then 4.68 cm down. The raw points below
+// were chosen for it.
+Eigen::Isometry3f cmu_lidar_to_body()
+{
+    Eigen::Isometry3f transform = Eigen::Isometry3f::Identity();
+    transform.linear() = Eigen::AngleAxisf(2.87820258F, Eigen::Vector3f::UnitY()).toRotationMatrix();
+    transform.translation() = Eigen::Vector3f(0.0F, 0.0F, -0.046825F);
+    return transform;
+}
 // A wall 2 m straight ahead of the robot.
 constexpr Point kRawWallAhead{-1.943F, 0.0F, 0.476F, 1.0F, 0, 0.0F};
 // Body point (-0.4, 0.1, -0.25), in the middle of the robot box, taken back
@@ -23,7 +36,7 @@ TEST(LidarToBody, WallStraightAheadEndsUpTwoMetresAhead)
     cloud.frame_id = "utlidar_lidar";
     cloud.points.push_back(kRawWallAhead);
 
-    lidar_to_body(cloud);
+    lidar_to_body(cloud, cmu_lidar_to_body());
 
     ASSERT_EQ(cloud.points.size(), 1U);
     EXPECT_NEAR(cloud.points[0].x, 2.0F, kTolerance);
@@ -39,7 +52,7 @@ TEST(LidarToBody, LidarCentreEndsUpBelowTheBodyOrigin)
     PointCloud cloud;
     cloud.points.push_back(Point{0.0F, 0.0F, 0.0F, 0.0F, 0, 0.0F});
 
-    lidar_to_body(cloud);
+    lidar_to_body(cloud, cmu_lidar_to_body());
 
     ASSERT_EQ(cloud.points.size(), 1U);
     EXPECT_FLOAT_EQ(cloud.points[0].x, 0.0F);
@@ -56,7 +69,7 @@ TEST(LidarToBody, KeepsEveryPointItsOtherFieldsAndTheStamp)
     cloud.points.push_back(Point{-1.943F, 0.0F, 0.476F, 40.0F, 5, 0.01F});
     cloud.points.push_back(kRawRobotBack);
 
-    lidar_to_body(cloud);
+    lidar_to_body(cloud, cmu_lidar_to_body());
 
     EXPECT_EQ(cloud.stamp_ns, 1'700'000'000'123'456'789);
     ASSERT_EQ(cloud.points.size(), 2U);
@@ -102,7 +115,7 @@ TEST(PreprocessCloud, RemovesTheRobotsBackOnlyAfterTheTurn)
     cloud.frame_id = "utlidar_lidar";
     cloud.points = {kRawWallAhead, kRawRobotBack, kRawBoxDecoy};
 
-    preprocess_cloud(cloud, kGo2RobotBody);
+    preprocess_cloud(cloud, cmu_lidar_to_body(), kGo2RobotBody);
 
     ASSERT_EQ(cloud.points.size(), 2U);
     EXPECT_FLOAT_EQ(cloud.points[0].intensity, 1.0F);  // wall
@@ -114,7 +127,7 @@ TEST(PreprocessCloud, EmptyCloudStaysEmpty)
 {
     PointCloud cloud;
 
-    preprocess_cloud(cloud, kGo2RobotBody);
+    preprocess_cloud(cloud, cmu_lidar_to_body(), kGo2RobotBody);
 
     EXPECT_TRUE(cloud.points.empty());
     EXPECT_EQ(cloud.frame_id, "body");

@@ -3,27 +3,16 @@
 #include <Eigen/Geometry>
 
 namespace go2_preprocessor {
-    namespace {
-    constexpr float kPi = 3.14159265F;
-    constexpr float kImuTilt = 15.1F * kPi / 180.0F;  // rad
-
-    // read right to left: a half turn around x undoes the upside-down mount
-    // (y and z change sign), then a -15.1 deg turn around y undoes the tilt.
-    const Eigen::Quaternionf kImuToBody =
-        Eigen::AngleAxisf(-kImuTilt, Eigen::Vector3f::UnitY()) * Eigen::AngleAxisf(kPi, Eigen::Vector3f::UnitX());
-    }  // namespace
-
-    Eigen::Vector3f imu_to_body(const Eigen::Vector3f &vector)
+    Eigen::Vector3f imu_to_body(const Eigen::Vector3f &vector, const Eigen::Matrix3f &rotation)
     {
-        return kImuToBody * vector;
+        return rotation * vector;
     }
 
-    Eigen::Quaternionf imu_orientation_to_body(const Eigen::Quaternionf &orientation)
+    Eigen::Quaternionf imu_orientation_to_body(const Eigen::Quaternionf &orientation, const Eigen::Matrix3f &rotation)
     {
         // world <- body = (world <- IMU) * (IMU <- body), and IMU <- body is the
-        // inverse of kImuToBody. CMU multiplies on the left with a +15.1 deg
-        // tilt instead, which does not match its own gyroscope rotation.
-        return orientation * kImuToBody.conjugate();
+        // inverse of `rotation`. a valid rotation is guaranteed by rotation_from_parameter().
+        return orientation * Eigen::Quaternionf(rotation).conjugate();
     }
 
     Eigen::Vector3f calibrate_gyro(const Eigen::Vector3f &angular_velocity, const GyroCalibration &calibration)

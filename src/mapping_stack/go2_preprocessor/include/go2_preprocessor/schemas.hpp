@@ -13,9 +13,6 @@ namespace go2_preprocessor {
         float intensity = 0.0F;
         std::uint16_t ring = 0;
         float time = 0.0F;
-
-        void rotate_y_axis(float angle);
-        void shift_z_axis(float shift);
     };
 
     struct PointCloud {

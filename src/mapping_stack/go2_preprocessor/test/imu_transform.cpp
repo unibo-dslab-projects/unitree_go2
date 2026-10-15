@@ -1,4 +1,4 @@
-// Unit tests for imu_to_body(), calibrate_gyro() and calibrate_accel().
+// Unit tests for imu_to_body(), imu_orientation_to_body(), calibrate_gyro() and calibrate_accel().
 #include "go2_preprocessor/imu_transform.hpp"
 
 #include <gtest/gtest.h>
@@ -15,11 +15,23 @@ namespace {
 // for a 0.5 rad/s turn, about 2.5 m/s^2 for gravity).
 constexpr float kTolerance = 1e-3F;
 
+constexpr float kPi = 3.14159265F;
+
+// How the IMU sits on the robot (CMU's mount, the node's default): what it
+// reports as its own orientation when the robot stands level and faces the
+// world's x axis. Read right to left: a half turn around x (upside down), then
+// -15.1 deg around y (tilt).
+const Eigen::Quaternionf kLevelRobotImu =
+    Eigen::AngleAxisf(-15.1F * kPi / 180.0F, Eigen::Vector3f::UnitY()) *
+    Eigen::AngleAxisf(kPi, Eigen::Vector3f::UnitX());
+// The same mount as the rotation imu_to_body() takes.
+const Eigen::Matrix3f kImuRotation = kLevelRobotImu.toRotationMatrix();
+
 // Body y points left, so a nose-down nod is a positive turn around y. The
 // upside-down IMU reports it with the opposite sign; the tilt leaves y alone.
 TEST(ImuToBody, NoseDownNodIsPositiveY)
 {
-    const Eigen::Vector3f body = imu_to_body(Eigen::Vector3f(0.0F, -0.5F, 0.0F));
+    const Eigen::Vector3f body = imu_to_body(Eigen::Vector3f(0.0F, -0.5F, 0.0F), kImuRotation);
 
     EXPECT_NEAR(body.x(), 0.0F, 1e-6F);
     EXPECT_NEAR(body.y(), 0.5F, 1e-6F);
@@ -29,7 +41,7 @@ TEST(ImuToBody, NoseDownNodIsPositiveY)
 // A left turn at 0.5 rad/s, as the tilted, upside-down IMU reports it.
 TEST(ImuToBody, LeftTurnIsPositiveZ)
 {
-    const Eigen::Vector3f body = imu_to_body(Eigen::Vector3f(0.130F, 0.0F, -0.483F));
+    const Eigen::Vector3f body = imu_to_body(Eigen::Vector3f(0.130F, 0.0F, -0.483F), kImuRotation);
 
     EXPECT_NEAR(body.x(), 0.0F, kTolerance);
     EXPECT_NEAR(body.y(), 0.0F, kTolerance);
@@ -40,24 +52,16 @@ TEST(ImuToBody, LeftTurnIsPositiveZ)
 // reaction straight up the body z axis.
 TEST(ImuToBody, GravityAtRestPointsUp)
 {
-    const Eigen::Vector3f body = imu_to_body(Eigen::Vector3f(2.556F, 0.0F, -9.471F));
+    const Eigen::Vector3f body = imu_to_body(Eigen::Vector3f(2.556F, 0.0F, -9.471F), kImuRotation);
 
     EXPECT_NEAR(body.x(), 0.0F, kTolerance);
     EXPECT_NEAR(body.y(), 0.0F, kTolerance);
     EXPECT_NEAR(body.z(), 9.81F, kTolerance);
 }
 
-constexpr float kPi = 3.14159265F;
-
-// How the IMU sits on the robot: what it reports as its own orientation when
-// the robot stands level and faces the world's x axis.
-const Eigen::Quaternionf kLevelRobotImu =
-    Eigen::AngleAxisf(-15.1F * kPi / 180.0F, Eigen::Vector3f::UnitY()) *
-    Eigen::AngleAxisf(kPi, Eigen::Vector3f::UnitX());
-
 TEST(ImuOrientationToBody, LevelRobotGivesNoRotation)
 {
-    const Eigen::Quaternionf body = imu_orientation_to_body(kLevelRobotImu);
+    const Eigen::Quaternionf body = imu_orientation_to_body(kLevelRobotImu, kImuRotation);
 
     EXPECT_NEAR(body.angularDistance(Eigen::Quaternionf::Identity()), 0.0F, kTolerance);
 }
@@ -68,7 +72,7 @@ TEST(ImuOrientationToBody, RobotYawComesThrough)
 {
     const Eigen::Quaternionf yaw(Eigen::AngleAxisf(kPi / 2.0F, Eigen::Vector3f::UnitZ()));
 
-    const Eigen::Quaternionf body = imu_orientation_to_body(yaw * kLevelRobotImu);
+    const Eigen::Quaternionf body = imu_orientation_to_body(yaw * kLevelRobotImu, kImuRotation);
 
     EXPECT_NEAR(body.angularDistance(yaw), 0.0F, kTolerance);
 }

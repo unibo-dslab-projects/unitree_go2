@@ -2,21 +2,18 @@
 
 #include <vector>
 
-namespace go2_preprocessor {
-    namespace {
-    // go2 L1 mount and body geometry, from CMU autonomy_stack_go2
-    // turn around the lidar's y axis that undoes the upside-down mount (180 deg)
-    // and the 15.1 deg tilt in one go: 164.9 deg.
-    constexpr float kLidarToBodyAngle = 2.87820258F;
-    // CMU subtracts the lidar height offset, hence the minus sign.
-    constexpr float kLidarToBodyShiftZ = -0.046825F;
-    }  // namespace
+#include <Eigen/Core>
+#include <Eigen/Geometry>
 
-    void lidar_to_body(PointCloud &cloud)
+namespace go2_preprocessor {
+    void lidar_to_body(PointCloud &cloud, const Eigen::Isometry3f &transform)
     {
         for (auto &point : cloud.points) {
-            point.rotate_y_axis(kLidarToBodyAngle);
-            point.shift_z_axis(kLidarToBodyShiftZ);
+            const Eigen::Vector3f body = transform * Eigen::Vector3f(point.x, point.y, point.z);
+
+            point.x = body.x();
+            point.y = body.y();
+            point.z = body.z();
         }
 
         cloud.frame_id = "body";
@@ -36,9 +33,9 @@ namespace go2_preprocessor {
         return kept;
     }
 
-    void preprocess_cloud(PointCloud &cloud, const Box &robot_body)
+    void preprocess_cloud(PointCloud &cloud, const Eigen::Isometry3f &lidar_to_body_transform, const Box &robot_body)
     {
-        lidar_to_body(cloud);
+        lidar_to_body(cloud, lidar_to_body_transform);
         cloud.points = remove_robot_points(cloud.points, robot_body);
     }
 }
