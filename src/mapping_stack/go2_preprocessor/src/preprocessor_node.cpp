@@ -1,11 +1,14 @@
 #include "go2_preprocessor/preprocessor_node.hpp"
+#include "go2_preprocessor/calibration.hpp"
 #include "go2_preprocessor/convertor.hpp"
 #include "go2_preprocessor/imu_transform.hpp"
 #include "go2_preprocessor/robot_utils.hpp"
 
 #include <cstddef>
+#include <sstream>
 #include <stdexcept>
 #include <string>
+#include <vector>
 
 #include <Eigen/Core>
 #include <Eigen/Geometry>
@@ -26,6 +29,14 @@ namespace go2_preprocessor {
     constexpr int kImuQueueSize = 50;  // the IMU publishes much faster than the lidar
     constexpr int kLogPeriodMs = 2000;
 
+    // calibration defaults
+    const std::vector<double> kLidarRotation = {
+        -0.965512905, 0.0, 0.260355201, 0.0, 1.0, 0.0, -0.260355201, 0.0, -0.965512905};
+    const std::vector<double> kLidarTranslation = {0.0, 0.0, -0.046825};  // m
+    // half turn around x (upside down), then -15.1 deg around y (tilt).
+    const std::vector<double> kImuRotation = {
+        0.965472631, 0.0, 0.260504509, 0.0, -1.0, 0.0, 0.260504509, 0.0, -0.965472631};
+
     // the node reads its settings once at start-up, so a later `ros2 param set`
     // would be silently ignored. Read-only makes it fail with an error instead.
     rcl_interfaces::msg::ParameterDescriptor read_only()
@@ -39,6 +50,63 @@ namespace go2_preprocessor {
     float declare_float(rclcpp::Node &node, const std::string &name, double default_value)
     {
         return static_cast<float>(node.declare_parameter<double>(name, default_value, read_only()));
+    }
+
+    // the conversion functions do not know the parameter, so its name is added here.
+    Eigen::Matrix3f declare_rotation(rclcpp::Node &node, const std::string &name, const std::vector<double> &default_values)
+    {
+        try {
+            return rotation_from_parameter(node.declare_parameter<std::vector<double>>(name, default_values, read_only()));
+        } catch (const std::invalid_argument &error) {
+            throw std::invalid_argument(name + ": " + error.what());
+        }
+    }
+
+    Eigen::Vector3f declare_vector3(rclcpp::Node &node, const std::string &name, const std::vector<double> &default_values)
+    {
+        try {
+            return vector_from_parameter(node.declare_parameter<std::vector<double>>(name, default_values, read_only()));
+        } catch (const std::invalid_argument &error) {
+            throw std::invalid_argument(name + ": " + error.what());
+        }
+    }
+
+    // names as go2_calibration writes them (report.cpp): a typo is not an error, the value
+    // from the file is silently ignored and the default used.
+    SensorCalibration read_calibration(rclcpp::Node &node)
+    {
+        SensorCalibration calibration;
+
+        calibration.lidar_to_body.linear() = declare_rotation(node, "lidar_to_body.rotation", kLidarRotation);
+        calibration.lidar_to_body.translation() = declare_vector3(node, "lidar_to_body.translation", kLidarTranslation);
+        calibration.imu_to_body = declare_rotation(node, "imu_to_body.rotation", kImuRotation);
+
+        // body frame: bias in rad/s, leaks unitless.
+        calibration.gyro.bias.x() = declare_float(node, "gyro_bias.x", 0.0);
+        calibration.gyro.bias.y() = declare_float(node, "gyro_bias.y", 0.0);
+        calibration.gyro.bias.z() = declare_float(node, "gyro_bias.z", 0.0);
+        calibration.gyro.z_to_x_leak = declare_float(node, "gyro_leak.z_to_x", 0.15);
+        calibration.gyro.z_to_y_leak = declare_float(node, "gyro_leak.z_to_y", -0.28);
+
+        calibration.range_offset = declare_float(node, "range_offset", 0.0);
+
+        return calibration;
+    }
+
+    // one line per value, so the log shows whether the parameter file was applied.
+    std::string describe(const SensorCalibration &calibration)
+    {
+        const Eigen::IOFormat one_line(6, Eigen::DontAlignCols, ", ", "; ", "", "", "[", "]");
+        std::ostringstream out;
+
+        out << "lidar_to_body rotation " << calibration.lidar_to_body.linear().format(one_line)
+            << ", translation " << calibration.lidar_to_body.translation().transpose().format(one_line) << " m\n"
+            << "imu_to_body rotation " << calibration.imu_to_body.format(one_line) << '\n'
+            << "gyro bias " << calibration.gyro.bias.transpose().format(one_line) << " rad/s, leak z_to_x "
+            << calibration.gyro.z_to_x_leak << ", z_to_y " << calibration.gyro.z_to_y_leak << '\n'
+            << "range_offset " << calibration.range_offset << " m";
+
+        return out.str();
     }
 
     Eigen::Vector3f to_eigen(const geometry_msgs::msg::Vector3 &vector)
@@ -82,7 +150,6 @@ namespace go2_preprocessor {
 
     PreprocessorNode::PreprocessorNode() : Node("go2_preprocessor")
     {
-        // TODO: use calibration result
         // where the lidar sees the robot's own back, body frame, metres.
         robot_body_.min_x = declare_float(*this, "robot_box.min_x", -0.7);
         robot_body_.max_x = declare_float(*this, "robot_box.max_x", -0.1);
@@ -91,12 +158,11 @@ namespace go2_preprocessor {
         robot_body_.min_z = declare_float(*this, "robot_box.min_z", -0.646825);
         robot_body_.max_z = declare_float(*this, "robot_box.max_z", -0.046825);
 
-        // IMU calibration, body frame: biases in rad/s and m/s^2, leaks unitless.
-        gyro_calibration_.bias.x() = declare_float(*this, "gyro_bias.x", 0.0);
-        gyro_calibration_.bias.y() = declare_float(*this, "gyro_bias.y", 0.0);
-        gyro_calibration_.bias.z() = declare_float(*this, "gyro_bias.z", 0.0);
-        gyro_calibration_.z_to_x_leak = declare_float(*this, "gyro_leak.z_to_x", 0.15);
-        gyro_calibration_.z_to_y_leak = declare_float(*this, "gyro_leak.z_to_y", -0.28);
+        calibration_ = read_calibration(*this);
+        RCLCPP_INFO(get_logger(), "calibration:\n%s", describe(calibration_).c_str());
+
+        // not from go2_calibration: the lidar accelerometer is not used (zero_acceleration).
+        // Body frame, m/s^2.
         accel_bias_.x() = declare_float(*this, "accel_bias.x", 0.0);
         accel_bias_.y() = declare_float(*this, "accel_bias.y", 0.0);
         accel_bias_.z() = declare_float(*this, "accel_bias.z", 0.0);
@@ -146,7 +212,7 @@ namespace go2_preprocessor {
     {
         // calibration values are in the body frame, so rotate first.
         const Eigen::Vector3f angular_velocity =
-            calibrate_gyro(imu_to_body(to_eigen(message->angular_velocity)), gyro_calibration_);
+            calibrate_gyro(imu_to_body(to_eigen(message->angular_velocity)), calibration_.gyro);
         const Eigen::Vector3f acceleration =
             calibrate_accel(imu_to_body(to_eigen(message->linear_acceleration)), accel_bias_);
 

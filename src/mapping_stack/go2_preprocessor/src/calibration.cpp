@@ -26,7 +26,7 @@ namespace go2_preprocessor {
         expect_size(values, 9);
         const Eigen::Map<const Eigen::Matrix<double, 3, 3, Eigen::RowMajor>> rotation(values.data());
 
-        // checked: rounding to float first would eat into the tolerance.
+        // checked in double precision: rounding to float first would eat into the tolerance.
         if (!(rotation * rotation.transpose()).isIdentity(kRotationTolerance)) {
             throw std::invalid_argument("not a rotation: the axes are stretched or not perpendicular");
         }

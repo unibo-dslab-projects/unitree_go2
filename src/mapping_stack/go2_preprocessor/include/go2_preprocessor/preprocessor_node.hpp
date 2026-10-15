@@ -1,5 +1,6 @@
 #pragma once
 
+#include "go2_preprocessor/calibration.hpp"
 #include "go2_preprocessor/imu_transform.hpp"
 #include "go2_preprocessor/schemas.hpp"
 
@@ -23,7 +24,7 @@ namespace go2_preprocessor {
         void on_imu(sensor_msgs::msg::Imu::ConstSharedPtr message);
 
         Box robot_body_;
-        GyroCalibration gyro_calibration_;
+        SensorCalibration calibration_;
         Eigen::Vector3f accel_bias_ = Eigen::Vector3f::Zero();
         bool zero_acceleration_ = true;
 
