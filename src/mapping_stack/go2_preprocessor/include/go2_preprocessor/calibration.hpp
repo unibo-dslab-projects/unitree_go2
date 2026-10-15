@@ -3,6 +3,8 @@
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 
+#include <vector>
+
 namespace go2_preprocessor {
     struct GyroCalibration {
         Eigen::Vector3f bias = Eigen::Vector3f::Zero();  // rad/s
@@ -18,4 +20,13 @@ namespace go2_preprocessor {
         GyroCalibration gyro;
         float range_offset = 0.0F;  // m, subtracted from every lidar range (they read too long)
     };
+
+    // turns the 9 numbers of a rotation parameter, row-major as go2_calibration writes them,
+    // into a matrix. Throws std::invalid_argument unless there are 9 values forming a rotation
+    // (no stretch, no mirror).
+    Eigen::Matrix3f rotation_from_parameter(const std::vector<double> &values);
+
+    // turns the 3 numbers of a vector parameter into a vector.
+    // Throws std::invalid_argument unless there are exactly 3 values.
+    Eigen::Vector3f vector_from_parameter(const std::vector<double> &values);
 }

@@ -21,6 +21,7 @@ add_executable(go2_preprocessor
     src/schemas.cpp
     src/robot_utils.cpp
     src/imu_transform.cpp
+    src/calibration.cpp
 )
 
 target_include_directories(go2_preprocessor PRIVATE include)
