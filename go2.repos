@@ -1,0 +1,5 @@
+repositories:
+  external/point_lio_unilidar:
+    type: git
+    url: https://github.com/NickGhignatti/point-lio-unilidar.git
+    version: 74721838f2fdbfff625548e10f51e145b99c135b

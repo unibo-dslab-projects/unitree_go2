@@ -1,0 +1,23 @@
+# go2_preprocessor settings edited by hand. The measured ones (lidar_to_body,
+# imu_to_body, gyro_bias, gyro_leak, range_offset) come from the
+# go2_calibration output, passed to the launch file as calibration_file.
+go2_preprocessor:
+  ros__parameters:
+    # Points inside this box (body frame, metres) hit the robot itself and are
+    # dropped. Still CMU's values, built for their lidar_to_body translation
+    # (0, 0, -0.046825): check them in RViz with the real calibration.
+    robot_box:
+      min_x: -0.7
+      max_x: -0.1
+      min_y: -0.3
+      max_y: 0.3
+      min_z: -0.646825
+      max_z: -0.046825
+
+    # The lidar accelerometer is not trusted: Point-LIO gets zeros instead
+    # (gravity is set to zero in point_lio.yaml to match).
+    zero_acceleration: true
+    accel_bias:
+      x: 0.0
+      y: 0.0
+      z: 0.0

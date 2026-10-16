@@ -71,3 +71,6 @@ log/
 
 # ide
 .zed/
+
+# dependencies cloned by `vcs import src < go2.repos`
+src/external/
