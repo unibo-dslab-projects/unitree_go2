@@ -50,7 +50,8 @@ namespace go2_calibration {
         result.range = fit_range_offset(data.floor_points, *floor);
 
         // 2. Lidar IMU rotation, from the turns and tilts.
-        const auto rotation = fit_imu_rotation(data.moving_lidar_gyro, data.moving_body_gyro);
+        const ImuRotationSearch search;
+        const auto rotation = fit_imu_rotation(data.moving_lidar_gyro, data.moving_body_gyro, search);
         if (!rotation) {
             throw std::runtime_error("too little turning to fit the IMU rotation (needs the gyroscope above 0.15 rad/s)");
         }
@@ -80,6 +81,10 @@ namespace go2_calibration {
             at_most("lidar_to_body error rms, mm", result.lidar_to_body.rms * 1000.0, limits.max_mount_error_mm),
             at_most("floor tilt after lidar_to_body, deg", result.floor_tilt_deg, limits.max_floor_tilt_deg),
             at_most("imu_to_body error rms, rad/s", result.imu_to_body.fit.rms, limits.max_gyro_error),
+            // a lag on the edge of the search means the best lag lies outside it.
+            at_most(
+                "imu_to_body |lag|, ms", std::abs(static_cast<double>(result.imu_to_body.lag_ns)) / 1e6,
+                static_cast<double>(search.max_lag_ns - search.lag_step_ns) / 1e6),
             at_least("turn axis spread", result.axis_spread, limits.min_axis_spread),
             at_most("still gyroscope noise, rad/s", result.gyro_bias.std_dev.maxCoeff(), limits.max_still_noise),
             at_most(

@@ -13,10 +13,13 @@ namespace go2_calibration {
     namespace {
     // unitree's examples repeat motion commands in a loop; 50 Hz keeps Move and Euler smooth.
     constexpr double kRateHz = 50.0;
+    // a sample is stamped when its callback runs, so the sequence spins far more often than it
+    // commands: at 50 Hz every IMU sample of 20 ms got the same stamp, and the lag search failed.
+    constexpr double kSpinRateHz = 1000.0;
     constexpr double kWaitForTopicsS = 5.0;
     constexpr double kBodySilentS = 0.5;
     constexpr double kStopMoveS = 0.5;
-    // room for far more than the 20 ms between two spins (the body state comes at about 300 Hz).
+    // room for far more than a slow spin, while a cloud is converted (the body state comes at about 300 Hz).
     constexpr std::size_t kQueueSize = 100;
     }  // namespace
 
@@ -64,6 +67,7 @@ namespace go2_calibration {
         rclcpp::executors::SingleThreadedExecutor executor;
         executor.add_node(node.get_node_base_interface());
         rclcpp::WallRate rate(kRateHz);
+        rclcpp::WallRate spin_rate(kSpinRateHz);
 
         // helper lambda to send a command to the motion controller
         const auto send = [&](const Command &command) { request_publisher->publish(to_request(command)); };
@@ -105,6 +109,7 @@ namespace go2_calibration {
         try {
             const rclcpp::Time started = steady.now();
             std::optional<std::size_t> current;
+            std::optional<rclcpp::Time> last_command;
             while (true) {
                 executor.spin_some();
                 if (stop_requested) {
@@ -122,18 +127,21 @@ namespace go2_calibration {
                 if (!setpoint) {
                     break;
                 }
-                const Phase &phase = phases[setpoint->phase];
-                const bool new_phase = current != setpoint->phase;
-                if (new_phase) {
-                    current = setpoint->phase;
-                    RCLCPP_INFO(node.get_logger(), "phase %s, %.1f s", phase.name.c_str(), phase.duration_s);
+                if (!last_command || seconds_since(*last_command) >= 1.0 / kRateHz) {
+                    last_command = steady.now();
+                    const Phase &phase = phases[setpoint->phase];
+                    const bool new_phase = current != setpoint->phase;
+                    if (new_phase) {
+                        current = setpoint->phase;
+                        RCLCPP_INFO(node.get_logger(), "phase %s, %.1f s", phase.name.c_str(), phase.duration_s);
+                    }
+                    // a mode switch is asked once; motion commands are repeated on every command tick.
+                    if (phase.action != Action::balance_stand || new_phase) {
+                        send(setpoint->command);
+                    }
+                    set_phase(phase.name);
                 }
-                // a mode switch is asked once; motion commands are repeated on every tick.
-                if (phase.action != Action::balance_stand || new_phase) {
-                    send(setpoint->command);
-                }
-                set_phase(phase.name);
-                rate.sleep();
+                spin_rate.sleep();
             }
         } catch (...) {
             stop_robot();

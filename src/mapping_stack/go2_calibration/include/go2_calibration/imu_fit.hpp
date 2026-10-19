@@ -29,7 +29,7 @@ namespace go2_calibration {
     struct ImuRotationSearch {
         double min_rate = 0.15;               // rad/s: slower turns are mostly bias and noise
         std::int64_t max_gap_ns = 3'000'000;  // the two IMUs publish at about 250 and 300 Hz
-        std::int64_t max_lag_ns = 40'000'000;
+        std::int64_t max_lag_ns = 100'000'000;  // a live run on 2026-10-19 hit -40 ms, the old edge
         std::int64_t lag_step_ns = 5'000'000;
     };
 

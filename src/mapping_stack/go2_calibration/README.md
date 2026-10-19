@@ -16,7 +16,7 @@ wrong by about 25 deg and CMU's method cannot see it.
 | `lidar_to_body` (rotation, translation) | `/utlidar/cloud` against its copy `/utlidar/cloud_base`, robot still | matched points (at least 1000), fit error rms (at most 1 mm) |
 | floor tilt | the floor in the raw cloud, turned by `lidar_to_body` | at most 2 deg |
 | `range_offset` | how the flat floor bends into a bowl (every range a constant too long) | reported, no limit |
-| `imu_to_body` (rotation) | lidar IMU gyroscope against the body gyroscope of `/sportmodestate`, robot turning and tilting, with a lag search | fit error rms (at most 0.25 rad/s), turn axis spread (at least 0.01) |
+| `imu_to_body` (rotation) | lidar IMU gyroscope against the body gyroscope of `/sportmodestate`, robot turning and tilting, with a lag search over ±100 ms | fit error rms (at most 0.25 rad/s), lag inside the search (at most 95 ms), turn axis spread (at least 0.01) |
 | `gyro_bias` | lidar IMU gyroscope, robot still, in the body frame | noise std (at most 0.02 rad/s) |
 | `gyro_leak` | what `imu_to_body` and the bias leave of the yaw rate on x and y | at most 0.1 |
 | gravity direction | lidar IMU accelerometer after `imu_to_body` | reported: above 5 deg the accelerometer is not usable |
