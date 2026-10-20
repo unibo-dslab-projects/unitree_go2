@@ -1,0 +1,17 @@
+# Returns the whole map built so far.
+# Call it once when you start or after you miss a delta, then apply MapDelta
+# messages with a seq higher than the one returned here.
+
+# (no request fields)
+---
+# Same meaning as in MapDelta.
+# A MapDelta with another run_id belongs to another map: call GetMap again.
+uint32 run_id
+
+# seq of the last delta included in this map; 0 = no delta sent yet.
+# Ignore every MapDelta with seq <= this value, because it is already in `points`.
+uint64 seq
+
+# Every voxel of the map so far, in the map frame (camera_init).
+# Fields x y z intensity, float32 (16 bytes per point).
+sensor_msgs/PointCloud2 points
