@@ -1,0 +1,36 @@
+#pragma once
+
+#include <cstdint>
+#include <string>
+#include <vector>
+
+namespace go2_preprocessor {
+
+    struct Point {
+        float x = 0.0F;
+        float y = 0.0F;
+        float z = 0.0F;
+        float intensity = 0.0F;
+        std::uint16_t ring = 0;
+        float time = 0.0F;
+    };
+
+    struct PointCloud {
+        std::string frame_id;
+        std::int64_t stamp_ns = 0;
+        std::vector<Point> points;
+    };
+
+    // Axis-aligned box, limits in metres, one min/max pair per axis.
+    struct Box {
+        float min_x = 0.0F;
+        float max_x = 0.0F;
+        float min_y = 0.0F;
+        float max_y = 0.0F;
+        float min_z = 0.0F;
+        float max_z = 0.0F;
+
+        bool contains(const Point &point) const;
+    };
+
+}

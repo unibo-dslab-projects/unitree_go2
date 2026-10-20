@@ -1,0 +1,146 @@
+# Started from CMU's config/utlidar.yaml plus the <param> overrides in their
+# mapping_utlidar.launch.
+# Changes from CMU: extrinsic_R/T (identity/zero), pcd_save_en (true),
+# init_map_size (5000), and the filter sizes under the names the code reads
+# (CMU's yaml has *_min, ignored).
+point_lio:
+  ros__parameters:
+    # false: the IMU is a *measurement* of the filter (Point-LIO's own model,
+    # robust in aggressive motion). true: IMU is a control input, like
+    # FAST-LIO. With false, the *_cov_input values below are unused.
+    use_imu_as_input: false
+    # true: propagate the state at every IMU sample (high-rate pose between
+    # scans). false: only at lidar-point times.
+    prop_at_freq_of_imu: true
+    # true: detect IMU saturation (|gyro| or |acc| >= 99% of satu_gyro /
+    # satu_acc below) and stop trusting that axis while it is clipped.
+    check_satu: true
+
+    # Points collected before tracking starts (~0.5 s of L1 scans; the robot
+    # must stand still meanwhile). CMU's 10 builds the first map from a single
+    # 62 ms scan, mostly floor: the heading then has nothing to hold on to and
+    # the gyro bias estimate runs away.
+    init_map_size: 5000
+    # Keep every Nth point of each scan (1 = keep all, 2 = half, ...).
+    point_filter_num: 1
+    # true: voxel-downsample each scan with filter_size_surf before matching.
+    space_down_sample: true
+    # Voxel size (m) of the downsampled scan used for matching.
+    filter_size_surf: 0.5
+    # Voxel size (m) of the map (ik-d tree): at most one point per voxel, so
+    # this is the map resolution. Smaller = finer map, more memory and CPU.
+    filter_size_map: 0.5
+    # Side (m) of the local map cube centred on the robot. When the robot gets
+    # near the cube edge (within det_range) the cube moves and far points are
+    # dropped. 1000 m means the map is practically never cropped.
+    cube_side_length: 1000.0
+    # true: write a pose/timing log to a file while running (debug only).
+    runtime_pos_log_enable: false
+
+    common:
+      # Input topics. Both come from go2_preprocessor, not from the robot.
+      lid_topic: "/utlidar/transformed_cloud"
+      imu_topic: "/utlidar/transformed_imu"
+      # true: concatenate con_frame_num consecutive lidar messages into one
+      # scan (useful for lidars with very sparse frames).
+      con_frame: false
+      con_frame_num: 1
+      # true: split each lidar message into slices of cut_frame_time_interval
+      # seconds and process each as its own scan (higher output rate).
+      cut_frame: false
+      cut_frame_time_interval: 0.1
+      # Seconds subtracted from the IMU stamps to align them with the lidar
+      # (use if the IMU clock lags the lidar clock). 0 = already in sync.
+      time_lag_imu_to_lidar: 0.0
+
+    preprocess:
+      lidar_type: 5          # Unitree L1: x y z intensity ring time
+      scan_line: 18          # number of rings of the L1
+      timestamp_unit: 0      # the "time" field is in seconds
+      blind: 0.5             # drop points closer than this (metres)
+      # scan_rate is not set here: default 10 Hz from parameters.cpp.
+
+    mapping:
+      # true: use the IMU. false: lidar-only (then imu_time_inte is used).
+      imu_en: true
+      # false: the robot is standing still at start.
+      start_in_aggressive_motion: false
+      # true: estimate lidar-to-IMU extrinsic online. false: trust
+      # extrinsic_T/R below.
+      extrinsic_est_en: false
+      # IMU period (s). Only used when imu_en is false.
+      imu_time_inte: 0.01
+      # Saturation limits of the IMU: accelerometer (m/s^2), gyro (rad/s).
+      # Used by check_satus.
+      satu_acc: 30.0
+      satu_gyro: 35.0
+      # What the accelerometer reads at 1 g in its own unit. 9.81 = m/s^2,
+      # 1.0 = g. Acc is scaled by 9.81 / acc_norm before use.
+      acc_norm: 9.81
+      # Noise (variance) of one lidar point-to-plane distance (m^2).
+      # Smaller = trust the lidar more.
+      lidar_meas_cov: 0.01
+      # Process noise of acc / gyro states in the IMU-as-measurement model.
+      # Large values let the state follow fast motion; small values smooth it.
+      acc_cov_output: 500.0
+      gyr_cov_output: 1000.0
+      # Random-walk noise of the accelerometer / gyro bias. Larger = bias is
+      # allowed to drift faster.
+      b_acc_cov: 0.0001
+      b_gyr_cov: 0.0001
+      # Measurement noise of the IMU itself (acc and angular velocity).
+      # Smaller = trust the IMU more.
+      imu_meas_acc_cov: 0.1
+      imu_meas_omg_cov: 0.1
+      # Process noise of gyro / acc in the IMU-as-input model. Unused here
+      # because use_imu_as_input is false.
+      gyr_cov_input: 0.01
+      acc_cov_input: 0.1
+      # A set of neighbour points counts as a plane if each point is within
+      # this distance (m) of the fitted plane. Larger = accepts rougher planes.
+      plane_thr: 0.1
+      # Match validity: a point-to-plane match is kept only if
+      # |p| > match_s * residual^2. Larger = stricter, fewer matches kept.
+      match_s: 81.0
+      # Field of view (deg) of the lidar, used to decide which map points are
+      # visible from the current pose (map cropping).
+      fov_degree: 180.0
+      # Maximum useful lidar range (m); also sets when the local map cube
+      # (cube_side_length) is moved.
+      det_range: 100.0
+      # go2_preprocessor sends zero acceleration (zero_acceleration: true),
+      # so gravity is zero too.
+      # gravity_align: rotate the world frame so that gravity points along -z.
+      gravity_align: false
+      # Gravity vector in the world frame (m/s^2), and its initial guess.
+      gravity: [0.0, 0.0, 0.0]
+      gravity_init: [0.0, 0.0, 0.0]
+      # Pose of the lidar in the IMU frame. go2_preprocessor already turns
+      # both into the body frame, so they share one frame.
+      # T = translation (m), R = 3x3 rotation, row-major.
+      extrinsic_T: [0.0, 0.0, 0.0]
+      extrinsic_R: [1.0, 0.0, 0.0,
+                    0.0, 1.0, 0.0,
+                    0.0, 0.0, 1.0]
+      # vel_cov is not set here: default 20 from parameters.cpp.
+
+    odometry:
+      # true: publish /aft_mapped_to_init at every IMU propagation (high
+      # rate). false: once per processed scan.
+      publish_odometry_without_downsample: true
+
+    publish:
+      # Publish the accumulated trajectory as nav_msgs/Path (grows forever).
+      path_en: false
+      # Publish /cloud_registered: each scan in the world frame camera_init.
+      scan_publish_en: true
+      # Also publish each scan in the sensor (body) frame.
+      scan_bodyframe_pub_en: false
+
+    pcd_save:
+      # On shutdown, writes every registered scan to PCD/scans.pcd inside the
+      # point_lio_unilidar source folder (src/external/point_lio_unilidar).
+      pcd_save_en: true
+      # -1: one single file at shutdown. N > 0: write a new PCD file every
+      # N scans (keeps RAM low on long runs).
+      interval: -1
