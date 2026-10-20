@@ -13,8 +13,9 @@ namespace go2_calibration {
     namespace {
     // unitree's examples repeat motion commands in a loop; 50 Hz keeps Move and Euler smooth.
     constexpr double kRateHz = 50.0;
-    // a sample is stamped when its callback runs, so the sequence spins far more often than it
-    // commands: at 50 Hz every IMU sample of 20 ms got the same stamp, and the lag search failed.
+    // spin_some() takes one message per subscription, and a sample is stamped when its callback
+    // runs: spinning at 50 Hz kept 1 IMU sample in 5, each one the oldest of a full queue (about
+    // 0.4 s late). So the sequence spins far faster than the IMUs (250 and 300 Hz) and commands at 50 Hz.
     constexpr double kSpinRateHz = 1000.0;
     constexpr double kWaitForTopicsS = 5.0;
     constexpr double kBodySilentS = 0.5;
