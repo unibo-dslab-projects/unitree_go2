@@ -17,11 +17,13 @@ find_package(sensor_msgs REQUIRED)
 find_package(nav_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(std_srvs REQUIRED)
-# find_package(go2_mapping_msgs REQUIRED)
+find_package(go2_mapping_msgs REQUIRED)
 find_package(PCL REQUIRED COMPONENTS common io)
 
 # The core: plain C++, no ROS, no PCL. The node, the tool and any test link it,
 # so nothing is compiled twice.
+# Only files that exist are listed. Uncomment a line or a block when its file
+# is written, then run colcon build once so clangd sees the new file.
 add_library(map_builder_core STATIC
     src/voxel_map.cpp
     src/trajectory.cpp
@@ -38,16 +40,15 @@ target_link_libraries(map_builder_io map_builder_core ${PCL_LIBRARIES})
 # The ROS node.
 add_executable(map_builder
     src/main.cpp
-    src/map_builder_node.cpp
     src/cloud_msg.cpp
+    # src/node.cpp
 )
 target_link_libraries(map_builder map_builder_io)
-# to add go2_mapping_msgs at the end in case
 ament_target_dependencies(map_builder
-    rclcpp builtin_interfaces std_msgs sensor_msgs nav_msgs geometry_msgs std_srvs)
+    rclcpp builtin_interfaces std_msgs sensor_msgs nav_msgs geometry_msgs std_srvs go2_mapping_msgs)
 
 # Offline check of the voxel map on a PCD file, no ROS.
-add_executable(voxel_count tools/voxel_count.cpp)
+add_executable(voxel_count src/voxel_count.cpp)
 target_include_directories(voxel_count PRIVATE ${PCL_INCLUDE_DIRS})
 target_link_libraries(voxel_count map_builder_core ${PCL_LIBRARIES})
 
