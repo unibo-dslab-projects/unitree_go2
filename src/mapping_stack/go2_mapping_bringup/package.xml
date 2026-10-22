@@ -13,6 +13,7 @@
   <exec_depend>go2_preprocessor</exec_depend>
   <exec_depend>launch</exec_depend>
   <exec_depend>launch_ros</exec_depend>
+  <exec_depend>map_builder</exec_depend>
   <exec_depend>point_lio_unilidar</exec_depend>
   <exec_depend>rmw_cyclonedds_cpp</exec_depend>
 

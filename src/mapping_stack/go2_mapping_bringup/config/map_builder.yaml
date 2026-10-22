@@ -1,0 +1,16 @@
+# Parameters of map_builder. The top key must match the node name set in
+# map_builder.launch.py (map_builder): a different name makes ROS ignore the
+# whole file without an error. output_dir is set by the launch file (it needs
+# the home folder of the machine that runs the node).
+map_builder:
+  ros__parameters:
+    # Side of one voxel (m): the map keeps at most one point per voxel.
+    # 0.05 on 2026-10-19_line_01: 45,195 points; 0.10: 14,476.
+    voxel_size: 0.05
+    # How often new voxels are sent on delta.
+    delta_rate_hz: 2.0
+    # How often the robot pose is sent on pose.
+    pose_rate_hz: 10.0
+    # Whole map on full_map for RViz or Foxglove; 0 turns it off. Costly on
+    # big maps: every message holds the whole map.
+    full_map_rate_hz: 0.0

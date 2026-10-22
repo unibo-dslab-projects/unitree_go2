@@ -41,7 +41,7 @@ target_link_libraries(map_builder_io map_builder_core ${PCL_LIBRARIES})
 add_executable(map_builder
     src/main.cpp
     src/cloud_msg.cpp
-    # src/node.cpp
+    src/node.cpp
 )
 target_link_libraries(map_builder map_builder_io)
 ament_target_dependencies(map_builder

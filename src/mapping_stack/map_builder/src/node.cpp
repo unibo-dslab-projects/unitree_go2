@@ -70,22 +70,22 @@ namespace map_builder {
             }
         );
         delta_pub_ = create_publisher<go2_mapping_msgs::msg::MapDelta>(
-            "delta",
+            "~/delta",
             rclcpp::QoS(rclcpp::KeepLast(kDeltaQueueSize)).reliable()
         );
         pose_pub_ = create_publisher<geometry_msgs::msg::PoseStamped>(
-            "pose",
+            "~/pose",
             rclcpp::QoS(rclcpp::KeepLast(1)).reliable()
         );
         get_map_srv_ = create_service<go2_mapping_msgs::srv::GetMap>(
-            "get_map",
+            "~/get_map",
             [this](const std::shared_ptr<go2_mapping_msgs::srv::GetMap::Request> request,
                 std::shared_ptr<go2_mapping_msgs::srv::GetMap::Response> response) {
                 on_get_map(request, response);
             }
         );
         save_srv_ = create_service<std_srvs::srv::Trigger>(
-            "save",
+            "~/save",
             [this](const std::shared_ptr<std_srvs::srv::Trigger::Request> request,
                 std::shared_ptr<std_srvs::srv::Trigger::Response> response) {
                 on_save(request, response);
@@ -98,7 +98,7 @@ namespace map_builder {
         if (full_map_rate_hz > 0.0) {
             // transient local: a viewer that connects later still gets the last map
             cloud_pub_ = create_publisher<sensor_msgs::msg::PointCloud2>(
-                "full_map",
+                "~/full_map",
                 rclcpp::QoS(rclcpp::KeepLast(1)).reliable().transient_local()
             );
             map_timer_ = create_wall_timer(period_of(full_map_rate_hz), [this]() { publish_full_map(); });
