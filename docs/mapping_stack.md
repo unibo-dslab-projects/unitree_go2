@@ -4,7 +4,7 @@ The packages that turn the Go2's lidar into a map:
 
 | Package | Does |
 |---|---|
-| [go2_calibration](go2_calibration/README.md) | measures how the lidar and its IMU sit on the robot, writes `go2_calibration.yaml` |
+| [go2_calibration](../src/go2_calibration/README.md) | measures how the lidar and its IMU sit on the robot, writes `go2_calibration.yaml` |
 | `go2_preprocessor` | turns `/utlidar/cloud` and `/utlidar/imu` into the body frame with that file |
 | `go2_mapping_bringup` | launch file and settings that start `go2_preprocessor` and Point-LIO together |
 | Point-LIO (`src/external/point_lio_unilidar`, from `go2.repos`) | builds the map and the robot's path |
@@ -161,7 +161,7 @@ the laptop.
 
 ## 2. Calibrate
 
-Read the safety part of [go2_calibration](go2_calibration/README.md) first. This is its first live
+Read the safety part of [go2_calibration](../src/go2_calibration/README.md) first. This is its first live
 run: keep the remote in hand. The robot stands still for 30 s, turns two full turns each way, then
 tilts, about 97 s in all. It needs a flat floor and 1 m free all around.
 

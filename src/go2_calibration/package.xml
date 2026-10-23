@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>go2_calibration</name>
+  <version>0.0.0</version>
+  <description>Calibrates the Go2 L1 lidar and its IMU (mount, IMU rotation, gyroscope bias and leak, range offset), live by driving the robot or from a bag, and writes a parameter file for go2_preprocessor</description>
+  <maintainer email="nick.ghignatti@gmail.com">Nicolò Ghignatti</maintainer>
+  <license>GPL-3.0</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <depend>builtin_interfaces</depend>
+  <depend>eigen</depend>
+  <depend>geometry_msgs</depend>
+  <depend>rclcpp</depend>
+  <depend>rosbag2_cpp</depend>
+  <depend>rosbag2_storage</depend>
+  <depend>sensor_msgs</depend>
+  <depend>std_msgs</depend>
+  <depend>unitree_api</depend>
+  <depend>unitree_go</depend>
+
+  <test_depend>ament_cmake_gtest</test_depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>
