@@ -1,4 +1,4 @@
-# mapping_stack
+# Mapping stack
 
 The packages that turn the Go2's lidar into a map:
 
@@ -194,7 +194,7 @@ When it has finished, stop window 1 with one Ctrl-C.
 
 ## 3. Record the walks
 
-Each walk uses `record_line.sh` (see [tools/bags](../../tools/bags/README.md)). The script checks the
+Each walk uses `record_line.sh` (see [tools/bags](../tools/bags/README.md)). The script checks the
 topics, the clock and the cloud rate, records, says KEEP THE ROBOT STILL for the first 5 s, and asks
 for notes at the end. Point-LIO needs the still start: it builds its first map then (about 0.5 s).
 
