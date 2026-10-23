@@ -30,7 +30,7 @@ Both are on the lab Wi-Fi `dslab-robot`.
 | `/utlidar/imu` | `sensor_msgs/msg/Imu` | `utlidar_imu` | about 250 Hz (11706 messages in 46.9 s, 2026-09-28) | a few hundred bytes per message |
 
 Calibration needs no bag: `go2_calibration` drives the robot and measures live (see
-[its README](../../src/mapping_stack/go2_calibration/README.md)). It replaced the `calib`,
+[its README](../../src/go2_calibration/README.md)). It replaced the `calib`,
 `standstill` and `spin` bags on 2026-10-13.
 
 ### Disk space

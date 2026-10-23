@@ -123,7 +123,7 @@ Terminal 1 prints `saved 45195 points and 296 poses to ...`.
 
 Then press Ctrl-C in terminal 2, then in terminal 1. Point-LIO ends with `terminate called without
 an active exception` and launch reports `process has died`: that is Point-LIO's known exit flaw
-(see `mapping_stack/README.md`, step 5), not map_builder. Point-LIO also writes its own map on
+(see [docs/mapping_stack.md](../../docs/mapping_stack.md), step 5), not map_builder. Point-LIO also writes its own map on
 Ctrl-C, over `src/external/point_lio_unilidar/PCD/scans.pcd`: copy that file first if you still
 need the old one.
 

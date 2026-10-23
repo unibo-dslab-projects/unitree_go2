@@ -23,7 +23,7 @@ does (back on the start mark, end of the tape), which only the operator knows.
 
 The calibration (lidar mount, IMU rotation, gyroscope bias and leak, range offset) needs no bag: the
 `go2_calibration` program drives the robot and measures live
-([src/mapping_stack/go2_calibration](../../src/mapping_stack/go2_calibration/README.md)). The
+([src/go2_calibration](../../src/go2_calibration/README.md)). The
 `calib`, `standstill` and `spin` scripts it replaces were removed on 2026-10-13.
 
 - `/sportmodestate` holds the gyroscope and accelerometer of the robot body.
@@ -92,7 +92,7 @@ deletes anything itself.
 ## Notes
 
 - Playing a bag with `/sportmodestate` on the laptop needs the `unitree_go` messages in the
-  container (see [go2_calibration](../../src/mapping_stack/go2_calibration/README.md), "Laptop");
+  container (see [go2_calibration](../../src/go2_calibration/README.md), "Laptop");
   without them, play the other topics only (`--topics /utlidar/cloud /utlidar/imu`).
 - To add a bag type, copy a `record_<type>.sh`, change its variables, and add the expected rate of
   any new topic to `EXPECTED_HZ` in `common.sh`.
