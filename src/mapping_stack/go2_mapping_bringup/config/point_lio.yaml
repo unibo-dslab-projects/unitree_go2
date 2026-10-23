@@ -26,10 +26,10 @@ point_lio:
     # true: voxel-downsample each scan with filter_size_surf before matching.
     space_down_sample: true
     # Voxel size (m) of the downsampled scan used for matching.
-    filter_size_surf: 0.5
+    filter_size_surf: 0.1
     # Voxel size (m) of the map (ik-d tree): at most one point per voxel, so
     # this is the map resolution. Smaller = finer map, more memory and CPU.
-    filter_size_map: 0.5
+    filter_size_map: 0.1
     # Side (m) of the local map cube centred on the robot. When the robot gets
     # near the cube edge (within det_range) the cube moves and far points are
     # dropped. 1000 m means the map is practically never cropped.
@@ -127,7 +127,7 @@ point_lio:
     odometry:
       # true: publish /aft_mapped_to_init at every IMU propagation (high
       # rate). false: once per processed scan.
-      publish_odometry_without_downsample: true
+      publish_odometry_without_downsample: false
 
     publish:
       # Publish the accumulated trajectory as nav_msgs/Path (grows forever).
