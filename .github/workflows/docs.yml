@@ -1,0 +1,50 @@
+name: Docs
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - master
+    paths:
+      - "docs/**"
+      - ".github/workflows/docs.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: deploy-docs
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
+        with:
+          persist-credentials: false
+
+      # setup-quarkdown installs latest when given no version; build.sh holds the one pin
+      - name: Read the pinned Quarkdown version
+        id: quarkdown
+        run: |
+          version=$(sed -n 's/^QUARKDOWN_VERSION="\(.*\)"$/\1/p' docs/build.sh)
+          if [ -z "$version" ]; then
+            echo "::error::QUARKDOWN_VERSION not found in docs/build.sh"
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - uses: quarkdown-labs/setup-quarkdown@7f1c7a66fd944e1717778356590e57469a525ca4
+        with:
+          quarkdown-version: ${{ steps.quarkdown.outputs.version }}
+
+      - name: Build site
+        run: bash docs/build.sh
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@84c30a85c19949d7eee79c4ff27748b70285e453
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./docs/_site
