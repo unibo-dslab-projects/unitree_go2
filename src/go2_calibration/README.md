@@ -63,6 +63,10 @@ replayed later with `bag:=`.
 
 ## Run
 
+`tools/mapping/calibration.sh` does all of this section in one command: it records the bag, runs
+the calibration and points `~/calibration/current.yaml` at the result for `map.sh`
+([tools/mapping](../../tools/mapping/README.md)). By hand:
+
 On the robot, standing on a flat floor with 1 m clear around it:
 
 ```bash

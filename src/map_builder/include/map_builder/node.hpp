@@ -4,6 +4,7 @@
 #include "map_builder/trajectory.hpp"
 
 #include <cstdint>
+#include <filesystem>
 #include <memory>
 #include <optional>
 #include <string>
@@ -24,6 +25,10 @@ namespace map_builder {
     public:
         MapBuilderNode();
 
+        // saves the map if save_on_exit is set; main calls it after spin returns on Ctrl-C,
+        // so a run stopped by hand is never lost
+        void save_at_exit();
+
     private:
         void on_cloud(const sensor_msgs::msg::PointCloud2::ConstSharedPtr& message);
         void on_odometry(const nav_msgs::msg::Odometry::ConstSharedPtr& message);
@@ -39,10 +44,13 @@ namespace map_builder {
             const std::shared_ptr<std_srvs::srv::Trigger::Request>& request,
             std::shared_ptr<std_srvs::srv::Trigger::Response>& response
         );
+        // writes map.pcd and trajectory.tum into a new run folder and returns it; throws on failure
+        std::filesystem::path save_map();
 
         VoxelMap map_;
         Trajectory trajectory_;
         std::string output_dir_;
+        bool save_on_exit_ = false;
 
         std::uint32_t run_id_ = 0;
         std::uint64_t seq_ = 0;

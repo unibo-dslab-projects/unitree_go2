@@ -6,14 +6,15 @@ The packages that turn the Go2's lidar into a map:
 |---|---|
 | [go2_calibration](../src/go2_calibration/README.md) | measures how the lidar sits on the robot and how the body IMU reads, writes `go2_calibration.yaml` |
 | `go2_preprocessor` | turns `/utlidar/cloud` into the body frame and calibrates the body IMU of `/sportmodestate`, with that file |
-| `go2_mapping_bringup` | launch file and settings that start `go2_preprocessor` and Point-LIO together |
+| `go2_mapping_bringup` | launch file and settings that start `go2_preprocessor`, Point-LIO and `map_builder` together |
 | Point-LIO (`src/external/point_lio_unilidar`, from `go2.repos`) | builds the map and the robot's path |
+| [map_builder](../src/map_builder/README.md) | collects Point-LIO's scans into one map and saves it on Ctrl-C |
+| [tools/mapping](../tools/mapping/README.md) | `calibration.sh` and `map.sh`: the two commands of a session on the robot |
 
 ```
-robot or bag                go2_preprocessor                     Point-LIO
-/utlidar/cloud ──────►  (+ go2_calibration.yaml)  ──► /utlidar/transformed_cloud ──►  /cloud_registered   (each scan, in the map frame camera_init)
-/sportmodestate ─────►                            ──► /utlidar/transformed_imu   ──►  /aft_mapped_to_init (pose, ~7 kHz)
-                                                                                      PCD/scans.pcd       (whole map, written on Ctrl-C)
+robot or bag                go2_preprocessor                     Point-LIO                                         map_builder
+/utlidar/cloud ──────►  (+ go2_calibration.yaml)  ──► /utlidar/transformed_cloud ──►  /cloud_registered   (each scan, in camera_init) ──► ~/maps/<time>/map.pcd
+/sportmodestate ─────►                            ──► /utlidar/transformed_imu   ──►  /aft_mapped_to_init (pose, ~7 kHz)              ──► ~/maps/<time>/trajectory.tum
 ```
 
 The launch file only starts the two programs and hands each its settings. They find each other
@@ -161,30 +162,21 @@ the laptop.
 
 ## 2. Calibrate
 
-Read the safety part of [go2_calibration](../src/go2_calibration/README.md) first. This is its first live
-run: keep the remote in hand. The robot stands still for 30 s, turns two full turns each way, then
-tilts, about 97 s in all. It needs a flat floor and 1 m free all around.
+Read the safety part of [go2_calibration](../src/go2_calibration/README.md) first. Keep the remote
+in hand. The robot stands still for 30 s, turns two full turns each way, then tilts, about 97 s in
+all. It needs a flat floor and 1 m free all around.
 
-Everything in this step runs on the robot computer, typed in the `ssh go2` session from step 1:
-the lidar topics exist only on the robot's internal network, and the program steers the robot.
-Start `tmux new -s calib` and open two windows (tmux keeps the run alive if the Wi-Fi drops). In both, run `source ~/unitree_ros2/setup.sh` and
-`source ~/unitree_go2/install/setup.bash`.
-
-Window 1, the raw data, so the calibration can be run again later from the bag:
+This runs on the robot computer, in the `ssh go2` session from step 1: the lidar topics exist only
+on the robot's internal network, and the program steers the robot. Inside `tmux new -s calib` (tmux
+keeps the run alive if the Wi-Fi drops):
 
 ```bash
-ros2 bag record -o ~/bags/$(date +%F)_calibration_01 \
-    /utlidar/cloud /utlidar/cloud_base /utlidar/imu /sportmodestate /calibration/phase
+~/unitree_go2/tools/mapping/calibration.sh
 ```
 
-Window 2, the calibration itself:
-
-```bash
-mkdir -p ~/calibration
-ros2 run go2_calibration go2_calibration --ros-args -p output:=$HOME/calibration/$(date +%F)_go2_calibration.yaml
-```
-
-When it has finished, stop window 1 with one Ctrl-C.
+It records the raw data to `~/bags/<date>_calibration_NN`, runs the calibration, and on success
+writes `~/calibration/<date>_calibration_NN.yaml` and points `~/calibration/current.yaml` at it
+(see [tools/mapping](../tools/mapping/README.md)).
 
 - Every line of the report must say PASS. Then the file exists. Write down `lidar_to_body`,
   `range_offset` and the floor tilt next to the 2026-10-13 numbers in the go2_calibration README.
@@ -224,7 +216,7 @@ On the laptop, outside the container, from the repository root:
 
 ```bash
 tools/bags/fetch.sh '<date>_*'
-scp go2:calibration/<date>_go2_calibration.yaml ~/Documents/Uni/thesis/calibration/
+rsync -avP 'go2:calibration/<date>_calibration_*.yaml' ~/Documents/Uni/thesis/calibration/
 ```
 
 `<date>` is the robot's date, for example `2026-10-19`. `fetch.sh` checks every bag and prints the
@@ -248,7 +240,9 @@ in the container have received nothing.
 Terminal 1, the mapping chain:
 
 ```bash
-ros2 launch go2_mapping_bringup mapping.launch.py calibration_file:=$HOME/Documents/Uni/thesis/calibration/<date>_go2_calibration.yaml
+ros2 launch go2_mapping_bringup mapping.launch.py \
+    calibration_file:=$HOME/Documents/Uni/thesis/calibration/<date>_calibration_NN.yaml \
+    output_dir:=$HOME/Documents/Uni/thesis/maps
 ```
 
 Terminal 2, record Point-LIO's poses (the folder must not exist yet):
@@ -264,14 +258,10 @@ Terminal 3, the bag. Only the lidar cloud and the body state are needed:
 ros2 bag play ~/Documents/Uni/thesis/bags/<bag> --topics /utlidar/cloud /sportmodestate
 ```
 
-When the player has finished, press Ctrl-C in terminal 2, then in terminal 1. Point-LIO writes the
-map, then exits with `terminate called without an active exception` and launch reports `process
-has died`. That is a known flaw of Point-LIO's exit, and the map is already saved. Each run
-overwrites the map, so copy it at once:
-
-```bash
-cp src/external/point_lio_unilidar/PCD/scans.pcd ~/Documents/Uni/thesis/replays/<bag>.pcd
-```
+When the player has finished, press Ctrl-C in terminal 2, then in terminal 1. `map_builder` writes
+`~/Documents/Uni/thesis/maps/<time of the first scan>/map.pcd` and `trajectory.tum` (a replay of the
+same bag again gets `<time>_1`). Point-LIO exits with `terminate called without an active
+exception` and launch reports `process has died`: a known flaw of Point-LIO's exit, harmless.
 
 The result depends on the laptop keeping up. If other programs keep the CPU busy (check `uptime`;
 the 2026-10-16 replays ran at a load below 2), replay at a quarter of the speed with `-r 0.25`, which
@@ -332,15 +322,21 @@ start it again.
 
 ## After this: live on the robot (not tried yet)
 
-The goal is to map live. The launch file is the same; only the data source changes. What it needs
-on the robot, from `~/unitree_go2`:
+The goal is to map live. The launch file is the same; only the data source changes. Build once on
+the robot, from `~/unitree_go2`:
 
 ```bash
+source ~/unitree_ros2/setup.sh
 vcs import src < go2.repos       # without vcs: sudo apt install python3-vcstool
 rosdep install --from-paths src/external --ignore-src -y
-colcon build --packages-up-to go2_mapping_bringup
-source install/setup.bash
-ros2 launch go2_mapping_bringup mapping.launch.py calibration_file:=$HOME/calibration/<date>_go2_calibration.yaml
+colcon build --packages-up-to go2_mapping_bringup go2_calibration
+```
+
+Then a session is two commands, inside tmux (see [tools/mapping](../tools/mapping/README.md)):
+
+```bash
+~/unitree_go2/tools/mapping/calibration.sh     # the robot moves by itself, about 100 s
+~/unitree_go2/tools/mapping/map.sh             # walk; Ctrl-C saves ~/maps/<time>/map.pcd
 ```
 
 Open points before it can work well:
@@ -351,5 +347,3 @@ Open points before it can work well:
 - `/aft_mapped_to_init` comes at about 7 kHz, too much for Wi-Fi. Record it on the robot instead,
   or watch only `/cloud_registered`.
 - Nobody has measured yet whether the robot computer keeps up with Point-LIO while walking.
-- The map is written inside the source folder on the robot
-  (`src/external/point_lio_unilidar/PCD/scans.pcd`).

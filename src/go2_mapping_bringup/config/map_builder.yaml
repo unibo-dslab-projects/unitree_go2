@@ -14,3 +14,7 @@ map_builder:
     # Whole map on full_map for RViz or Foxglove; 0 turns it off. Costly on
     # big maps: every message holds the whole map.
     full_map_rate_hz: 0.0
+    # Write map.pcd and trajectory.tum when the node stops (Ctrl-C), so a run
+    # is kept even if nobody called the save service. Calling save first and
+    # then stopping gives two folders, <time> and <time>_1.
+    save_on_exit: true

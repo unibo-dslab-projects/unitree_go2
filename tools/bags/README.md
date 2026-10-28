@@ -21,10 +21,10 @@ The robot lies still in the first, so its length is part of the measurement (bia
 a known time) and a timer ends it. In the others the robot walks, and the bag ends when the task
 does (back on the start mark, end of the tape), which only the operator knows.
 
-The calibration (lidar mount, IMU rotation, gyroscope bias and leak, range offset) needs no bag: the
-`go2_calibration` program drives the robot and measures live
-([src/go2_calibration](../../src/go2_calibration/README.md)). The
-`calib`, `standstill` and `spin` scripts it replaces were removed on 2026-10-13.
+The calibration (lidar mount, body IMU, range offset) has its own script,
+[tools/mapping/calibration.sh](../mapping/README.md): it drives the robot, measures live with
+`go2_calibration` and records its bag as well. The `calib`, `standstill` and `spin` scripts it
+replaces were removed on 2026-10-13.
 
 - `/sportmodestate` holds the gyroscope and accelerometer of the robot body.
 - `/utlidar/cloud_base` is the cloud already turned into the body frame by the Unitree firmware.
