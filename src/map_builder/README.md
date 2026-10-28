@@ -18,9 +18,10 @@ Collects Point-LIO's output into one map and one path, and saves both to disk.
 | `/map_builder/get_map` | service, `go2_mapping_msgs/GetMap` | the whole map now, plus the `seq` of the last delta inside it |
 | `/map_builder/save` | service, `std_srvs/Trigger` | writes `map.pcd` and `trajectory.tum` |
 
-- **Out, on disk** (only when `save` is called): one folder per run inside `output_dir`, named after
-  the time of the first scan in UTC, for example `~/maps/2026-10-19T14:35:23/`. Saving twice in the
-  same run gives `..._1`, `..._2`.
+- **Out, on disk** (when `save` is called, and on Ctrl-C when `save_on_exit` is true, as in
+  `map_builder.yaml`): one folder per run inside `output_dir`, named after the time of the first
+  scan in UTC, for example `~/maps/2026-10-19T14:35:23/`. Saving twice in the same run, or
+  replaying the same bag again, gives `..._1`, `..._2`.
   - `map.pcd`: one point per cube, fields `x y z intensity`, metres, frame `camera_init`.
   - `trajectory.tum`: one line per pose, `stamp x y z qx qy qz qw` (TUM format, stamp in seconds).
 
@@ -69,8 +70,17 @@ It must print nothing. If it prints something, stop it with `pkill -f <name>`.
 
 ```bash
 ros2 launch go2_mapping_bringup mapping.launch.py \
-    calibration_file:=$HOME/Documents/Uni/thesis/calibration/2026-10-19_go2_calibration.yaml \
+    calibration_file:=$HOME/Documents/Uni/thesis/calibration/2026-10-19_calibration_03.yaml \
     output_dir:=$HOME/Documents/Uni/thesis/maps
+```
+
+The calibration file must hold `body_imu`, or the preprocessor runs with gyro bias 0 and scale 1.
+Make it once from the calibration bag of the same day:
+
+```bash
+ros2 run go2_calibration go2_calibration --ros-args \
+    -p bag:=$HOME/Documents/Uni/thesis/bags/2026-10-19_calibration_03 \
+    -p output:=$HOME/Documents/Uni/thesis/calibration/2026-10-19_calibration_03.yaml
 ```
 
 Wait for this line from map_builder:
@@ -105,27 +115,22 @@ While it plays:
   `Voxels <total>, added <n> points from cloud`. The total only grows.
 - Terminal 2 prints `seq: 1`, `seq: 2`, `seq: 3`, ... with no number skipped.
 
-### 6. Terminal 3: save
+### 6. Stop and save
 
-When the bag has finished:
-
-```bash
-ros2 service call /map_builder/save std_srvs/srv/Trigger
-```
-
-The answer names the folder:
+When the bag has finished, press Ctrl-C in terminal 2, then in terminal 1. map_builder saves on the
+way out (`save_on_exit`) and terminal 1 prints:
 
 ```
-std_srvs.srv.Trigger_Response(success=True, message='/home/nick/Documents/Uni/thesis/maps/2026-10-19T14:35:23')
+[map_builder]: saved 44641 points and 297 poses to /home/nick/Documents/Uni/thesis/maps/2026-10-19T14:35:23
 ```
 
-Terminal 1 prints `saved 45195 points and 296 poses to ...`.
+If that folder already exists from an earlier replay, the new one is `..._1`. Point-LIO ends with
+`terminate called without an active exception` and launch reports `process has died`: that is
+Point-LIO's known exit flaw (see [docs/mapping_stack.md](../../docs/mapping_stack.md), step 5), not
+map_builder.
 
-Then press Ctrl-C in terminal 2, then in terminal 1. Point-LIO ends with `terminate called without
-an active exception` and launch reports `process has died`: that is Point-LIO's known exit flaw
-(see [docs/mapping_stack.md](../../docs/mapping_stack.md), step 5), not map_builder. Point-LIO also writes its own map on
-Ctrl-C, over `src/external/point_lio_unilidar/PCD/scans.pcd`: copy that file first if you still
-need the old one.
+To save in the middle of a run without stopping, call the service:
+`ros2 service call /map_builder/save std_srvs/srv/Trigger`. The answer names the folder.
 
 ### 7. Check the result
 
@@ -139,14 +144,15 @@ tail -1 $RUN/trajectory.tum
 ros2 run map_builder voxel_count $RUN/map.pcd 0.05
 ```
 
-What a correct run gives (measured on 2026-10-22):
+What a correct run gives (measured on 2026-10-28, body IMU, calibration from
+`2026-10-19_calibration_03`; two runs gave 44641 and 44729 points):
 
 | Check | Expected | Why it matters |
 |---|---|---|
-| `POINTS` in `map.pcd` | 45195 | one point per 5 cm cube of the walk |
-| lines in `trajectory.tum` | 296 | one pose per scan Point-LIO processed |
-| last line, 2nd column (x) | 5.30… | Point-LIO's end of the walk; the tape says 5.40 m |
-| `voxel_count` | `Inserted 45195 points, voxels: 45195, second inserted: 0` | no two saved points share a cube, so the map has no repeats |
+| `POINTS` in `map.pcd` | about 44,700 | one point per 5 cm cube of the walk |
+| lines in `trajectory.tum` | 297 | one pose per scan Point-LIO processed |
+| last line, 2nd column (x) | 5.33 to 5.35 | Point-LIO's end of the walk; the tape says 5.40 m |
+| `voxel_count` | `Inserted N points, voxels: N, second inserted: 0`, N = `POINTS` | no two saved points share a cube, so the map has no repeats |
 | last `seq` in terminal 2 | about 150 | depends on timing; only the gaps matter |
 
 If `POINTS` is about 18,700 and x is about 7.36, Point-LIO ran with the old 0.5 filter size: check

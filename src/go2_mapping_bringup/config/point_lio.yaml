@@ -1,8 +1,8 @@
 # Started from CMU's config/utlidar.yaml plus the <param> overrides in their
 # mapping_utlidar.launch.
-# Changes from CMU: extrinsic_R/T (identity/zero), pcd_save_en (true),
-# init_map_size (5000), gravity on (CMU feeds no acceleration), and the filter
-# sizes under the names the code reads (CMU's yaml has *_min, ignored).
+# Changes from CMU: extrinsic_R/T (identity/zero), init_map_size (5000),
+# gravity on (CMU feeds no acceleration), and the filter sizes under the names
+# the code reads (CMU's yaml has *_min, ignored).
 point_lio:
   ros__parameters:
     # false: the IMU is a *measurement* of the filter (Point-LIO's own model,
@@ -144,9 +144,10 @@ point_lio:
       scan_bodyframe_pub_en: false
 
     pcd_save:
-      # On shutdown, writes every registered scan to PCD/scans.pcd inside the
-      # point_lio_unilidar source folder (src/external/point_lio_unilidar).
-      pcd_save_en: true
+      # true: on shutdown, writes every registered scan to PCD/scans.pcd inside
+      # the point_lio_unilidar source folder, overwriting the last run. Off:
+      # map_builder saves the map of each run in its own folder.
+      pcd_save_en: false
       # -1: one single file at shutdown. N > 0: write a new PCD file every
       # N scans (keeps RAM low on long runs).
       interval: -1

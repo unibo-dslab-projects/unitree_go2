@@ -6,6 +6,7 @@
 #include <cstdint>
 #include <filesystem>
 #include <random>
+#include <stdexcept>
 #include <rclcpp/rclcpp.hpp>
 
 namespace map_builder {
@@ -50,6 +51,7 @@ namespace map_builder {
         const double pose_rate_hz = declare_rate(*this, "pose_rate_hz", 10.0, false);
         const double full_map_rate_hz = declare_rate(*this, "full_map_rate_hz", 0.0, true);
         output_dir_ = declare_parameter<std::string>("output_dir", "", read_only());
+        save_on_exit_ = declare_parameter<bool>("save_on_exit", false, read_only());
 
         run_id_ = std::random_device{}();
 
@@ -234,40 +236,51 @@ namespace map_builder {
         std::shared_ptr<std_srvs::srv::Trigger::Response>& response
     )
     {
-        if (output_dir_.empty()) {
-            response->success = false;
-            response->message = "output_dir is not set";
-            return;
-        }
-
-        if (!map_.size()) {
-            response->success = false;
-            response->message = "map is empty";
-            return;
-        }
-
         try {
-            const std::filesystem::path folder = make_run_folder(output_dir_, first_stamp_ns_);
-            save_pcd(folder / "map.pcd", map_.all());
-            save_tum(folder / "trajectory.tum", trajectory_);
+            response->message = save_map().string();
             response->success = true;
-            response->message = folder.string();
-            RCLCPP_INFO(
-                get_logger(),
-                "saved %zu points and %zu poses to %s",
-                map_.size(),
-                trajectory_.poses().size(),
-                folder.string().c_str()
-            );
         }
         catch (const std::exception& e) {
             response->success = false;
             response->message = e.what();
-            RCLCPP_ERROR(
-                get_logger(),
-                "save failed: %s",
-                e.what()
-            );
+            RCLCPP_ERROR(get_logger(), "save failed: %s", e.what());
         }
+    }
+
+    void MapBuilderNode::save_at_exit()
+    {
+        if (!save_on_exit_) {
+            return;
+        }
+
+        try {
+            save_map();
+        }
+        catch (const std::exception& e) {
+            RCLCPP_ERROR(get_logger(), "save at exit failed: %s", e.what());
+        }
+    }
+
+    std::filesystem::path MapBuilderNode::save_map()
+    {
+        if (output_dir_.empty()) {
+            throw std::runtime_error("output_dir is not set");
+        }
+
+        if (!map_.size()) {
+            throw std::runtime_error("map is empty");
+        }
+
+        const std::filesystem::path folder = make_run_folder(output_dir_, first_stamp_ns_);
+        save_pcd(folder / "map.pcd", map_.all());
+        save_tum(folder / "trajectory.tum", trajectory_);
+        RCLCPP_INFO(
+            get_logger(),
+            "saved %zu points and %zu poses to %s",
+            map_.size(),
+            trajectory_.poses().size(),
+            folder.string().c_str()
+        );
+        return folder;
     }
 }
