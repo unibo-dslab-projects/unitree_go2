@@ -43,6 +43,9 @@ namespace go2_calibration {
     // The body gyroscope, rad/s, body frame.
     Eigen::Vector3d body_gyro(const unitree_go::msg::SportModeState &state);
 
+    // The body accelerometer, m/s^2, body frame: about +9.4 on z when the robot stands level.
+    Eigen::Vector3d body_accel(const unitree_go::msg::SportModeState &state);
+
     // The sport request for a command, as Unitree's SportClient builds it: Move and Euler carry
     // {"x":...,"y":...,"z":...} as JSON, the others no parameter.
     unitree_api::msg::Request to_request(const Command &command);

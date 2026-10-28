@@ -30,6 +30,8 @@ namespace go2_calibration {
         std::size_t scans = 0;                       // scans matched with their copy
         std::vector<TimedVector> moving_lidar_gyro;  // lidar IMU frame
         std::vector<TimedVector> moving_body_gyro;   // /sportmodestate, body frame
+        std::vector<Eigen::Vector3d> still_body_gyro;   // /sportmodestate, body frame, rad/s
+        std::vector<Eigen::Vector3d> still_body_accel;  // /sportmodestate, body frame, m/s^2
     };
 
     class CalibrationBuffer {
@@ -41,8 +43,8 @@ namespace go2_calibration {
 
         // /utlidar/imu. time_ns: when the computer received it, the only clock both IMUs share.
         void add_lidar_imu(std::int64_t time_ns, const Eigen::Vector3d &gyro, const Eigen::Vector3d &accel);
-        // /sportmodestate imu_state gyroscope, same clock.
-        void add_body_gyro(std::int64_t time_ns, const Eigen::Vector3d &gyro);
+        // /sportmodestate imu_state, same clock.
+        void add_body_imu(std::int64_t time_ns, const Eigen::Vector3d &gyro, const Eigen::Vector3d &accel);
         // a scan of /utlidar/cloud (body_frame false) or of /utlidar/cloud_base (true). The two
         // copies of a scan share stamp_ns; the second one to arrive matches them.
         void add_scan(std::int64_t stamp_ns, const std::vector<ScanPoint> &points, bool body_frame);

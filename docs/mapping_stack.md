@@ -4,15 +4,15 @@ The packages that turn the Go2's lidar into a map:
 
 | Package | Does |
 |---|---|
-| [go2_calibration](../src/go2_calibration/README.md) | measures how the lidar and its IMU sit on the robot, writes `go2_calibration.yaml` |
-| `go2_preprocessor` | turns `/utlidar/cloud` and `/utlidar/imu` into the body frame with that file |
+| [go2_calibration](../src/go2_calibration/README.md) | measures how the lidar sits on the robot and how the body IMU reads, writes `go2_calibration.yaml` |
+| `go2_preprocessor` | turns `/utlidar/cloud` into the body frame and calibrates the body IMU of `/sportmodestate`, with that file |
 | `go2_mapping_bringup` | launch file and settings that start `go2_preprocessor` and Point-LIO together |
 | Point-LIO (`src/external/point_lio_unilidar`, from `go2.repos`) | builds the map and the robot's path |
 
 ```
 robot or bag                go2_preprocessor                     Point-LIO
 /utlidar/cloud ──────►  (+ go2_calibration.yaml)  ──► /utlidar/transformed_cloud ──►  /cloud_registered   (each scan, in the map frame camera_init)
-/utlidar/imu   ──────►                            ──► /utlidar/transformed_imu   ──►  /aft_mapped_to_init (pose, ~7 kHz)
+/sportmodestate ─────►                            ──► /utlidar/transformed_imu   ──►  /aft_mapped_to_init (pose, ~7 kHz)
                                                                                       PCD/scans.pcd       (whole map, written on Ctrl-C)
 ```
 
@@ -70,10 +70,9 @@ go2_preprocessor:
     lidar_to_body:
       rotation: [0.52611, -0.81014, 0.25862, -0.83867, -0.54464, 0.0, 0.14085, -0.2169, -0.96598]
       translation: [0.2822, 0.0, 0.0]
-    imu_to_body:
-      rotation: [0.52611, -0.81014, 0.25862, -0.83867, -0.54464, 0.0, 0.14085, -0.2169, -0.96598]
-    gyro_bias: {x: 0.0028, y: -0.0055, z: 0.0006}
-    gyro_leak: {z_to_x: 0.0335, z_to_y: 0.0093}
+    body_imu:
+      gyro_bias: {x: -0.0097, y: 0.0108, z: -0.0041}
+      accel_scale: 1.0385
     range_offset: 0.0
 EOF
 ```
@@ -104,7 +103,7 @@ ros2 bag record -o ~/Documents/Uni/thesis/replays/2026-10-13_spin_01_odom /aft_m
 Terminal 3, play the bag. It returns to the prompt after about 74 s:
 
 ```bash
-ros2 bag play ~/Documents/Uni/thesis/bags/2026-10-13_spin_01 --topics /utlidar/cloud /utlidar/imu
+ros2 bag play ~/Documents/Uni/thesis/bags/2026-10-13_spin_01 --topics /utlidar/cloud /sportmodestate
 ```
 
 Then press Ctrl-C in terminal 2, then in terminal 1. Terminal 1 ends with `terminate called without
@@ -125,7 +124,8 @@ print(f'{len(rows)} poses; end {math.hypot(b.position.x - a.position.x, b.positi
 EOF
 ```
 
-Expected (2026-10-17): `541461 poses; end 0.25 m from start, height -2.5 cm, heading -14.1 deg`.
+Expected (2026-10-17, from before the body IMU, when Point-LIO got the lidar gyroscope and no
+acceleration): `541461 poses; end 0.25 m from start, height -2.5 cm, heading -14.1 deg`.
 The pose count can be half that: Point-LIO sends about 7000 poses a second and the recorder drops
 some when the laptop is busy (284072 in a second run, same result). The distance and heading should
 stay within a few cm and a few degrees. If that comes out, the laptop side is ready.
@@ -258,10 +258,10 @@ mkdir -p ~/Documents/Uni/thesis/replays
 ros2 bag record -o ~/Documents/Uni/thesis/replays/<bag>_odom /aft_mapped_to_init
 ```
 
-Terminal 3, the bag. Only the lidar topics are needed:
+Terminal 3, the bag. Only the lidar cloud and the body state are needed:
 
 ```bash
-ros2 bag play ~/Documents/Uni/thesis/bags/<bag> --topics /utlidar/cloud /utlidar/imu
+ros2 bag play ~/Documents/Uni/thesis/bags/<bag> --topics /utlidar/cloud /sportmodestate
 ```
 
 When the player has finished, press Ctrl-C in terminal 2, then in terminal 1. Point-LIO writes the

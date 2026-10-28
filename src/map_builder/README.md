@@ -93,7 +93,7 @@ back and prints them in bursts about every 20 s. Nothing appears until the bag s
 ### 5. Terminal 3: play the bag
 
 ```bash
-ros2 bag play -r 0.25 ~/Documents/Uni/thesis/bags/2026-10-19_line_01 --topics /utlidar/cloud /utlidar/imu
+ros2 bag play -r 0.25 ~/Documents/Uni/thesis/bags/2026-10-19_line_01 --topics /utlidar/cloud /sportmodestate
 ```
 
 `-r 0.25` plays at a quarter of the speed, so the laptop always keeps up and the result is the same

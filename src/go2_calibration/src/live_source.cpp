@@ -46,7 +46,7 @@ namespace go2_calibration {
         const auto body_subscription = node.create_subscription<unitree_go::msg::SportModeState>(
             topics.body_state, qos, [&](unitree_go::msg::SportModeState::ConstSharedPtr message) {
                 last_seen[topics.body_state] = steady.now();
-                buffer.add_body_gyro(receive_ns(), body_gyro(*message));
+                buffer.add_body_imu(receive_ns(), body_gyro(*message), body_accel(*message));
             });
         // callback for cloud messages, converts to scan points and adds to buffer
         const auto on_cloud = [&](const std::string &topic, bool body_frame) {

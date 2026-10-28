@@ -14,6 +14,7 @@ find_package(ament_cmake REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(rcl_interfaces REQUIRED)
+find_package(unitree_go REQUIRED)
 
 add_executable(go2_preprocessor
     src/main.cpp
@@ -27,7 +28,7 @@ add_executable(go2_preprocessor
 
 target_include_directories(go2_preprocessor PRIVATE include)
 
-ament_target_dependencies(go2_preprocessor rclcpp rcl_interfaces sensor_msgs geometry_msgs)
+ament_target_dependencies(go2_preprocessor rclcpp rcl_interfaces sensor_msgs geometry_msgs unitree_go)
 target_link_libraries(go2_preprocessor Eigen3::Eigen)
 
 install(TARGETS go2_preprocessor DESTINATION lib/${PROJECT_NAME})

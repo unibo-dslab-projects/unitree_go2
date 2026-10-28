@@ -85,5 +85,5 @@ Stop with `Ctrl+C`, then copy the bag folder to the laptop:
 scp -r unitree@192.168.5.127:~/walk ~/Documents/Uni/thesis/bags/
 ```
 
-Add `/utlidar/imu` to the record command if the bag will feed a lidar-inertial SLAM later: the
-existing `still` and `walk` bags hold only `/utlidar/cloud`.
+Add `/sportmodestate` (the body IMU) to the record command if the bag will feed the mapping stack
+later: the existing `still` and `walk` bags hold only `/utlidar/cloud`.

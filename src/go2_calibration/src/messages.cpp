@@ -73,6 +73,12 @@ namespace go2_calibration {
         return Eigen::Vector3d(gyroscope[0], gyroscope[1], gyroscope[2]);
     }
 
+    Eigen::Vector3d body_accel(const unitree_go::msg::SportModeState &state)
+    {
+        const auto &accelerometer = state.imu_state.accelerometer;
+        return Eigen::Vector3d(accelerometer[0], accelerometer[1], accelerometer[2]);
+    }
+
     unitree_api::msg::Request to_request(const Command &command)
     {
         unitree_api::msg::Request request;

@@ -48,6 +48,17 @@ Eigen::Vector3d body_bias()
     return Eigen::Vector3d(0.003, -0.005, 0.0006);  // rad/s, body frame
 }
 
+// The body IMU's own bias, and its still accelerometer: 9.42 like our Go2's, tilted 1 deg about x.
+Eigen::Vector3d body_imu_bias()
+{
+    return Eigen::Vector3d(-0.0097, 0.0108, -0.0041);  // rad/s
+}
+
+Eigen::Vector3d body_imu_still_accel()
+{
+    return Eigen::AngleAxisd(radians(1.0), Eigen::Vector3d::UnitX()) * Eigen::Vector3d(0.0, 0.0, 9.42);
+}
+
 // A smooth turn, always faster than 0.15 rad/s; one_axis keeps only the yaw.
 Eigen::Vector3d turn_rate(double seconds, bool one_axis)
 {
@@ -81,6 +92,8 @@ CalibrationData go2_data(double range_offset = 0.0, bool one_axis = false)
         const double noise = i % 2 == 0 ? 0.001 : -0.001;
         data.still_gyro.push_back(body_to_imu * (body_bias() + Eigen::Vector3d::Constant(noise)));
         data.still_accel.push_back(body_to_imu * Eigen::Vector3d(0.0, 0.0, 9.81));
+        data.still_body_gyro.push_back(body_imu_bias() + Eigen::Vector3d::Constant(noise));
+        data.still_body_accel.push_back(body_imu_still_accel());
     }
 
     // Turning: the lidar IMU at 250 Hz with its bias, the body IMU at 300 Hz and 10 ms late.
@@ -120,7 +133,39 @@ TEST(Calibrate, RecoversEveryFrameOfASyntheticGo2)
     EXPECT_NEAR(c.imu_to_lidar_deg, 30.0, 0.5);
     EXPECT_LT((c.gyro_bias.mean - body_bias()).norm(), 1e-3);
     EXPECT_LT(c.gravity_tilt_deg, 0.5);
+    EXPECT_LT((c.body_gyro_bias.mean - body_imu_bias()).norm(), 1e-9);
+    EXPECT_NEAR(c.accel_scale, 9.81 / 9.42, 1e-9);
+    EXPECT_NEAR(c.body_tilt_deg, 1.0, 1e-6);
     EXPECT_TRUE(c.passed());
+}
+
+// An accelerometer that reports in g instead of m/s^2 reads 1 at rest: the scale would be 9.81.
+TEST(Calibrate, FailsTheScaleCheckForAnAccelerometerInAnotherUnit)
+{
+    CalibrationData data = go2_data();
+    for (Eigen::Vector3d &accel : data.still_body_accel) {
+        accel /= 9.42;
+    }
+
+    const Calibration c = calibrate(data);
+
+    EXPECT_NEAR(c.accel_scale, 9.81, 1e-6);
+    EXPECT_FALSE(check_named(c, "body accel_scale error").passed());
+    EXPECT_FALSE(c.passed());
+}
+
+// Gravity 20 deg off +z: the body IMU axes are not the body axes, or the robot was not standing.
+TEST(Calibrate, FailsTheTiltCheckWhenGravityIsNotUp)
+{
+    CalibrationData data = go2_data();
+    for (Eigen::Vector3d &accel : data.still_body_accel) {
+        accel = Eigen::AngleAxisd(radians(20.0), Eigen::Vector3d::UnitY()) * accel;
+    }
+
+    const Calibration c = calibrate(data);
+
+    EXPECT_FALSE(check_named(c, "body gravity tilt, deg").passed());
+    EXPECT_FALSE(c.passed());
 }
 
 // The turn itself moves x and y along with z (sin 2t does not average to 0 over 4 s), so the leak
@@ -183,6 +228,11 @@ TEST(Calibrate, ThrowsWhenDataIsMissing)
     no_still.still_gyro.clear();
     no_still.still_accel.clear();
     EXPECT_THROW(calibrate(no_still), std::runtime_error);
+
+    CalibrationData no_body_still = go2_data();
+    no_body_still.still_body_gyro.clear();
+    no_body_still.still_body_accel.clear();
+    EXPECT_THROW(calibrate(no_body_still), std::runtime_error);
 
     CalibrationData no_turning = go2_data();
     no_turning.moving_lidar_gyro.clear();

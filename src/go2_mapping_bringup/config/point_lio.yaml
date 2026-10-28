@@ -1,8 +1,8 @@
 # Started from CMU's config/utlidar.yaml plus the <param> overrides in their
 # mapping_utlidar.launch.
 # Changes from CMU: extrinsic_R/T (identity/zero), pcd_save_en (true),
-# init_map_size (5000), and the filter sizes under the names the code reads
-# (CMU's yaml has *_min, ignored).
+# init_map_size (5000), gravity on (CMU feeds no acceleration), and the filter
+# sizes under the names the code reads (CMU's yaml has *_min, ignored).
 point_lio:
   ros__parameters:
     # false: the IMU is a *measurement* of the filter (Point-LIO's own model,
@@ -71,8 +71,10 @@ point_lio:
       # IMU period (s). Only used when imu_en is false.
       imu_time_inte: 0.01
       # Saturation limits of the IMU: accelerometer (m/s^2), gyro (rad/s).
-      # Used by check_satus.
-      satu_acc: 30.0
+      # Used by check_satus. The body accelerometer peaks at 29 m/s^2 at foot
+      # strikes (2026-10-19 bags) with no flat ceiling, so it does not clip
+      # there; CMU's 30 would flag those peaks once scaled by accel_scale 1.04.
+      satu_acc: 40.0
       satu_gyro: 35.0
       # What the accelerometer reads at 1 g in its own unit. 9.81 = m/s^2,
       # 1.0 = g. Acc is scaled by 9.81 / acc_norm before use.
@@ -108,13 +110,17 @@ point_lio:
       # Maximum useful lidar range (m); also sets when the local map cube
       # (cube_side_length) is moved.
       det_range: 100.0
-      # go2_preprocessor sends zero acceleration (zero_acceleration: true),
-      # so gravity is zero too.
+      # go2_preprocessor sends the body accelerometer, scaled so that it reads
+      # 9.81 at rest. Without gravity here, Point-LIO would take that 9.81 as
+      # the robot speeding up; with gravity at zero (CMU) only the floor in the
+      # scans tells it which way is down.
       # gravity_align: rotate the world frame so that gravity points along -z.
-      gravity_align: false
-      # Gravity vector in the world frame (m/s^2), and its initial guess.
-      gravity: [0.0, 0.0, 0.0]
-      gravity_init: [0.0, 0.0, 0.0]
+      gravity_align: true
+      # Gravity vector in the world frame (m/s^2). At start Point-LIO measures
+      # gravity from the still accelerometer and turns it onto this vector.
+      gravity: [0.0, 0.0, -9.81]
+      # Used instead of that measurement only with start_in_aggressive_motion.
+      gravity_init: [0.0, 0.0, -9.81]
       # Pose of the lidar in the IMU frame. go2_preprocessor already turns
       # both into the body frame, so they share one frame.
       # T = translation (m), R = 3x3 rotation, row-major.

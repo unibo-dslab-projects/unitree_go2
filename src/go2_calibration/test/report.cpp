@@ -48,7 +48,9 @@ Calibration example()
     c.range.offset = 0.128;
     c.range.distance = 0.316;
     c.imu_to_body.fit.rotation = quarter_turn();
-    c.gyro_bias.mean = Eigen::Vector3d(0.00001, -0.0000025, 0.0017);
+    c.body_gyro_bias.mean = Eigen::Vector3d(0.00001, -0.0000025, 0.0017);
+    c.body_accel.mean = Eigen::Vector3d(0.0, 0.0, 9.42);
+    c.accel_scale = 9.81 / 9.42;
     c.checks = {Check{"matched lidar points", 151577.0, 1000.0, true}, Check{"gyro_leak left", 0.2, 0.1, false}};
     return c;
 }
@@ -59,9 +61,18 @@ TEST(ToParameterFile, WritesEveryParameterUnderTheNode)
 
     EXPECT_TRUE(contains(text, "go2_preprocessor:\n  ros__parameters:\n    lidar_to_body:\n"));
     EXPECT_TRUE(contains(text, "      translation: [0.282000, 0.000000, 0.000000]\n"));
-    EXPECT_TRUE(contains(text, "    imu_to_body:\n      rotation: "));
-    EXPECT_TRUE(contains(text, "    gyro_leak:\n      z_to_x: 0.000000\n      z_to_y: 0.000000\n"));
+    EXPECT_TRUE(contains(text, "      accel_scale: 1.041401\n"));
     EXPECT_TRUE(contains(text, "    range_offset: 0.1280\n"));
+}
+
+// go2_preprocessor reads only the body IMU: the lidar IMU results must not look like parameters.
+TEST(ToParameterFile, KeepsTheLidarImuInTheComments)
+{
+    const std::string text = to_parameter_file(example(), "go2_preprocessor", "a live run", kCreated);
+
+    EXPECT_TRUE(contains(text, "# imu_to_body: "));
+    EXPECT_FALSE(contains(text, "\n    imu_to_body:"));
+    EXPECT_FALSE(contains(text, "\n    gyro_leak:"));
 }
 
 // Row-major, with a decimal point on every value: "1" would parse as an integer, and an array
@@ -81,7 +92,8 @@ TEST(ToParameterFile, WritesSmallValuesWithoutExponent)
 {
     const std::string text = to_parameter_file(example(), "go2_preprocessor", "a live run", kCreated);
 
-    EXPECT_TRUE(contains(text, "    gyro_bias:\n      x: 0.000010000\n      y: -0.000002500\n      z: 0.001700000\n"));
+    EXPECT_TRUE(contains(
+        text, "    body_imu:\n      gyro_bias:\n        x: 0.000010000\n        y: -0.000002500\n        z: 0.001700000\n"));
 }
 
 TEST(ToParameterFile, EveryLineBeforeTheNodeIsAComment)
@@ -106,15 +118,11 @@ TEST(Describe, MarksEveryCheckPassOrFail)
     EXPECT_TRUE(contains(text, "range_offset: 0.128 m"));
 }
 
-TEST(Describe, FlagsAnAccelerometerOutsideTheGyroscopeFrame)
+TEST(Describe, ShowsTheBodyAccelerometer)
 {
-    Calibration calibration = example();
+    const std::string text = joined(describe(example()));
 
-    calibration.gravity_tilt_deg = 154.0;
-    EXPECT_TRUE(contains(joined(describe(calibration)), "keep zero_acceleration"));
-
-    calibration.gravity_tilt_deg = 1.0;
-    EXPECT_FALSE(contains(joined(describe(calibration)), "keep zero_acceleration"));
+    EXPECT_TRUE(contains(text, "|a| 9.420, accel_scale 1.0414, gravity 0.00 deg from +z"));
 }
 
 }  // namespace

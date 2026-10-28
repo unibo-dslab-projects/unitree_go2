@@ -105,8 +105,11 @@ Name every bag `<date>_<scenario>_<number>`, for example `2026-10-14_loop_01`.
 
 ```bash
 cd ~/bags
-ros2 bag record -o 2026-10-14_loop_01 /utlidar/cloud /utlidar/imu
+ros2 bag record -o 2026-10-14_loop_01 /utlidar/cloud /utlidar/imu /sportmodestate
 ```
+
+`/sportmodestate` holds the body IMU that the mapping stack feeds Point-LIO; recording it needs
+`source ~/unitree_ros2/setup.sh` first.
 
 1. Keep the robot **still for 5 seconds after starting** the recorder, and again for 5 seconds before
    stopping it. Point-LIO starts by estimating gravity from the first IMU samples and assumes the
@@ -121,7 +124,7 @@ A bag is a folder: `metadata.yaml` plus one `.db3` file (an SQLite database hold
 
 ```bash
 cd ~/bags
-nohup ros2 bag record -o 2026-10-14_loop_01 /utlidar/cloud /utlidar/imu > 2026-10-14_loop_01.log 2>&1 &
+nohup ros2 bag record -o 2026-10-14_loop_01 /utlidar/cloud /utlidar/imu /sportmodestate > 2026-10-14_loop_01.log 2>&1 &
 ```
 
 `nohup` keeps the recorder alive when the SSH session drops. To stop it, send it the same signal as
