@@ -3,13 +3,51 @@
 .theme {paperwhite} layout:{minimal}
 
 .pagemargin {topleft}
-    [Unitree Go2](./main.qd)
+    [.icon {book} Unitree Go2](./main.qd)
 
 .pagemargin {topright}
-    [Source](https://github.com/unibo-dslab-projects/unitree_go2)
+    [.icon {github}](https://github.com/unibo-dslab-projects/unitree_go2 "Source repository")
 
 .html
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Patrick+Hand&display=swap">
+    <style>
+    body.quarkdown.quarkdown-docs > header a:has(> .bi) {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+    body.quarkdown.quarkdown-docs > header a > .bi {
+      font-size: 1.3em;
+    }
+    /* the minimal layout fills the current page link with red */
+    body.quarkdown.quarkdown-docs aside nav[data-role=page-list] a[aria-current] {
+      background-color: transparent;
+      color: var(--qd-link-color);
+    }
+    /* quarkdown gives each sidebar 20vw and the page 45rem; here the sidebars hug
+       their links and the page takes the rest. below 1200px quarkdown stacks them. */
+    @media screen and (min-width: 1201px) {
+      body.quarkdown.quarkdown-docs > :is(header, .content-wrapper) > aside {
+        flex: 0 0 auto;
+        width: max-content;
+        max-width: 25vw;
+        margin: 0;
+        padding-left: 40px;
+        padding-right: 40px;
+      }
+      /* quarkdown adds 64px next to each sidebar through :first-child and :last-child */
+      body.quarkdown.quarkdown-docs > :is(header, .content-wrapper) > aside:is(:first-child, :last-child) {
+        margin: 0;
+      }
+      body.quarkdown.quarkdown-docs > :is(header, .content-wrapper) > main {
+        flex: 1 1 auto;
+        min-width: 0;
+        max-width: none;
+        padding: 0 48px;
+        box-sizing: border-box;
+      }
+    }
+    </style>
     <script src="https://cdn.jsdelivr.net/npm/svg2roughjs@3.2.3/dist/svg2roughjs.umd.min.js"></script>
     <script>
     (function () {
@@ -87,5 +125,3 @@
 
 .footer
     Unitree Go2 · Nicolò Ghignatti
-
-.pageformat width:{768}

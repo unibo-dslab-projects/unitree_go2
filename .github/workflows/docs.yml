@@ -25,23 +25,13 @@ jobs:
         with:
           persist-credentials: false
 
-      # setup-quarkdown installs latest when given no version; build.sh holds the one pin
-      - name: Read the pinned Quarkdown version
-        id: quarkdown
-        run: |
-          version=$(sed -n 's/^QUARKDOWN_VERSION="\(.*\)"$/\1/p' docs/build.sh)
-          if [ -z "$version" ]; then
-            echo "::error::QUARKDOWN_VERSION not found in docs/build.sh"
-            exit 1
-          fi
-          echo "version=$version" >> "$GITHUB_OUTPUT"
-
+      # pinned: the css and script in docs/_setup.qd hook into quarkdown's generated DOM
       - uses: quarkdown-labs/setup-quarkdown@7f1c7a66fd944e1717778356590e57469a525ca4
         with:
-          quarkdown-version: ${{ steps.quarkdown.outputs.version }}
+          quarkdown-version: "2.4.1"
 
       - name: Build site
-        run: bash docs/build.sh
+        run: quarkdown c docs/main.qd --out docs --out-name _site --allow native-content
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@84c30a85c19949d7eee79c4ff27748b70285e453
