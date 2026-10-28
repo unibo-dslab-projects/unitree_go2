@@ -26,17 +26,19 @@ TEST(CalibrationBuffer, SortsImuSamplesByPhase)
     buffer.add_lidar_imu(0, gyro, accel);  // no phase yet: dropped
     buffer.set_phase("still");
     buffer.add_lidar_imu(1, gyro, accel);
-    buffer.add_body_gyro(1, gyro);  // the body gyroscope counts only while moving
+    buffer.add_body_imu(1, gyro, accel);
     buffer.set_phase("spin_left");
     buffer.add_lidar_imu(2, gyro, accel);
-    buffer.add_body_gyro(3, gyro);
+    buffer.add_body_imu(3, gyro, accel);  // moving: the body accelerometer is not kept
     buffer.set_phase("pause");
     buffer.add_lidar_imu(4, gyro, accel);
-    buffer.add_body_gyro(4, gyro);
+    buffer.add_body_imu(4, gyro, accel);
 
     const CalibrationData &data = buffer.data();
     EXPECT_EQ(data.still_gyro.size(), 1U);
     EXPECT_EQ(data.still_accel.size(), 1U);
+    EXPECT_EQ(data.still_body_gyro.size(), 1U);
+    EXPECT_EQ(data.still_body_accel.size(), 1U);
     ASSERT_EQ(data.moving_lidar_gyro.size(), 1U);
     EXPECT_EQ(data.moving_lidar_gyro[0].time_ns, 2);
     ASSERT_EQ(data.moving_body_gyro.size(), 1U);

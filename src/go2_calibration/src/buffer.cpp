@@ -27,9 +27,12 @@ namespace go2_calibration {
         }
     }
 
-    void CalibrationBuffer::add_body_gyro(std::int64_t time_ns, const Eigen::Vector3d &gyro)
+    void CalibrationBuffer::add_body_imu(std::int64_t time_ns, const Eigen::Vector3d &gyro, const Eigen::Vector3d &accel)
     {
-        if (use_ == Use::moving) {
+        if (use_ == Use::still) {
+            data_.still_body_gyro.push_back(gyro);
+            data_.still_body_accel.push_back(accel);
+        } else if (use_ == Use::moving) {
             data_.moving_body_gyro.push_back(TimedVector{time_ns, gyro});
         }
     }

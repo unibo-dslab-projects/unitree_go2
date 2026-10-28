@@ -16,10 +16,17 @@ wrong by about 25 deg and CMU's method cannot see it.
 | `lidar_to_body` (rotation, translation) | `/utlidar/cloud` against its copy `/utlidar/cloud_base`, robot still | matched points (at least 1000), fit error rms (at most 1 mm) |
 | floor tilt | the floor in the raw cloud, turned by `lidar_to_body` | at most 2 deg |
 | `range_offset` | how the flat floor bends into a bowl (every range a constant too long) | reported, no limit |
-| `imu_to_body` (rotation) | lidar IMU gyroscope against the body gyroscope of `/sportmodestate`, robot turning and tilting, with a lag search over ±100 ms | fit error rms (at most 0.25 rad/s), lag inside the search (at most 95 ms), turn axis spread (at least 0.01) |
-| `gyro_bias` | lidar IMU gyroscope, robot still, in the body frame | noise std (at most 0.02 rad/s) |
-| `gyro_leak` | what `imu_to_body` and the bias leave of the yaw rate on x and y | at most 0.1 |
-| gravity direction | lidar IMU accelerometer after `imu_to_body` | reported: above 5 deg the accelerometer is not usable |
+| `body_imu.gyro_bias` | body gyroscope of `/sportmodestate`, robot still | noise std (at most 0.02 rad/s) |
+| `body_imu.accel_scale` | 9.81 over the length of the still body accelerometer reading | at most 0.1 away from 1 |
+| body gravity direction | still body accelerometer against +z | at most 5 deg |
+| `imu_to_body` (rotation, report only) | lidar IMU gyroscope against the body gyroscope, robot turning and tilting, with a lag search over ±100 ms | fit error rms (at most 0.25 rad/s), lag inside the search (at most 95 ms), turn axis spread (at least 0.01) |
+| `gyro_bias` (report only) | lidar IMU gyroscope, robot still, in the body frame | noise std (at most 0.02 rad/s) |
+| `gyro_leak` (report only) | what `imu_to_body` and the bias leave of the yaw rate on x and y | at most 0.1 |
+| lidar gravity direction (report only) | lidar IMU accelerometer after `imu_to_body` | none: this accelerometer is synthetic |
+
+`go2_preprocessor` feeds Point-LIO the body IMU only. The lidar IMU results stay as comments in the
+file: the angle between `imu_to_body` and `lidar_to_body` shows whether the body IMU axes agree with
+the lidar mount, because the lidar IMU uses the cloud's axes (0.9 deg apart on our Go2).
 
 If a check fails, the report shows FAIL and **no file is written**.
 
@@ -29,7 +36,7 @@ If a check fails, the report shows FAIL and **no file is written**.
              live: drives the robot          bag: replays a recorded bag
                  run_live()                        read_bag()
                       \                              /
-                       set_phase / add_lidar_imu / add_body_gyro / add_scan
+                       set_phase / add_lidar_imu / add_body_imu / add_scan
                                      |
                               CalibrationBuffer   (sorts samples by phase: still, moving, none)
                                      |
@@ -97,7 +104,7 @@ All are ROS parameters (`-p name:=value`, or `--params-file`); the defaults suit
 | `motion.still_s`, `motion.pause_s` | 30, 3 | s (10 to 300, 1 to 30) |
 | `motion.spin_rate`, `motion.spin_turns` | 1.0, 2 | rad/s (0.3 to 1.5), turns each way (0.5 to 5) |
 | `motion.tilt_angle`, `motion.tilt_frequency`, `motion.tilt_s` | 0.2, 0.4, 15 | rad (0 to 0.3; 0 leaves the tilts out), Hz (0.1 to 1), s (2 to 60) |
-| `limits.*` | see the table above | `min_matched_points`, `max_mount_error_mm`, `max_floor_tilt_deg`, `max_gyro_error`, `min_axis_spread`, `max_still_noise`, `max_leak` |
+| `limits.*` | see the table above | `min_matched_points`, `max_mount_error_mm`, `max_floor_tilt_deg`, `max_gyro_error`, `min_axis_spread`, `max_still_noise`, `max_leak`, `max_accel_scale_error`, `max_body_tilt_deg` |
 
 A motion value outside its range stops the program before anything moves.
 
@@ -112,16 +119,16 @@ go2_preprocessor:
     lidar_to_body:
       rotation: [9 values, row-major]
       translation: [x, y, z]
-    imu_to_body:
-      rotation: [9 values, row-major]
-    gyro_bias: {x, y, z}
-    gyro_leak: {z_to_x, z_to_y}
+    body_imu:
+      gyro_bias: {x, y, z}
+      accel_scale: <about 1.04>
     range_offset: <metres>
 ```
 
-Convention: `p_body = R * p_sensor + t`, body frame x forward, y left, z up. `gyro_bias` and
-`gyro_leak` are measured after `imu_to_body`: use them only together with it. `go2_preprocessor`
-does not use `range_offset` yet.
+Convention: `p_body = R * p_sensor + t`, body frame x forward, y left, z up. `body_imu` needs no
+rotation: the `/sportmodestate` IMU already uses the body axes. `accel_scale` is a scale and not a
+bias because standing still shows only the reading along gravity, where the two look the same.
+`go2_preprocessor` does not use `range_offset` yet.
 
 ## Safety (live run)
 
@@ -159,7 +166,7 @@ colcon build --packages-select go2_calibration
 colcon test --packages-select go2_calibration && colcon test-result --verbose
 ```
 
-67 unit tests: every ROS-free part (sequence, buffer, fits, range offset, checks, report), the
+72 unit tests: every ROS-free part (sequence, buffer, fits, range offset, checks, report), the
 message conversions, and the bag source on bags written by the test. The live source drives a robot
 and has no unit test; it was checked on the laptop against fake topics on an isolated domain
 (`ROS_LOCALHOST_ONLY=1 ROS_DOMAIN_ID=77`): no robot, full run, and Ctrl-C mid-turn.
@@ -175,8 +182,13 @@ give in bag mode (all checks PASS):
   0.123 rad/s, axis spread 0.040 (from the turns' leg wobble, before the tilts existed).
 - `gyro_bias` (0.0028, -0.0055, 0.0006) rad/s, noise up to 0.007 rad/s; leak 0.034 / 0.009.
 - Gravity 154 deg from +z after `imu_to_body`: the lidar accelerometer is not in the gyroscope
-  frame, so keep `zero_acceleration` true in `go2_preprocessor`.
+  frame, which is why `go2_preprocessor` takes the body IMU instead.
 - `range_offset` 0.110 m with the lidar 0.330 m above the floor.
+
+The body IMU, measured on the three 2026-10-19 calibration bags: `accel_scale` 1.0385 to 1.0420
+(the still accelerometer reads 9.41 to 9.45 m/s^2), gravity 1.2 to 2.2 deg from +z, gyro bias about
+(-0.010, 0.011, -0.004) rad/s. Only `calibration_03` passes every check; the other two fail the
+floor tilt (2.05 and 2.83 deg), and `calibration_02` also the still noise.
 
 ## Limits
 

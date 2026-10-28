@@ -77,6 +77,9 @@ namespace {
         s.limits.min_axis_spread = node.declare_parameter("limits.min_axis_spread", s.limits.min_axis_spread);
         s.limits.max_still_noise = node.declare_parameter("limits.max_still_noise", s.limits.max_still_noise);
         s.limits.max_leak = node.declare_parameter("limits.max_leak", s.limits.max_leak);
+        s.limits.max_accel_scale_error =
+            node.declare_parameter("limits.max_accel_scale_error", s.limits.max_accel_scale_error);
+        s.limits.max_body_tilt_deg = node.declare_parameter("limits.max_body_tilt_deg", s.limits.max_body_tilt_deg);
         return s;
     }
 

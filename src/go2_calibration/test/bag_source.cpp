@@ -93,6 +93,7 @@ unitree_go::msg::SportModeState body(float x, float y, float z)
 {
     unitree_go::msg::SportModeState message;
     message.imu_state.gyroscope = {x, y, z};
+    message.imu_state.accelerometer = {0.0F, 0.0F, 9.5F};
     return message;
 }
 
@@ -136,6 +137,10 @@ TEST(ReadBag, ReplaysEveryTopicThroughThePhases)
     const CalibrationData &data = buffer.data();
     ASSERT_EQ(data.still_gyro.size(), 1U);
     EXPECT_TRUE(data.still_gyro[0].isApprox(Eigen::Vector3d(0.1, 0.2, 0.3)));
+    ASSERT_EQ(data.still_body_gyro.size(), 1U);
+    EXPECT_TRUE(data.still_body_gyro[0].isApprox(Eigen::Vector3d(9.0, 9.0, 9.0)));
+    ASSERT_EQ(data.still_body_accel.size(), 1U);
+    EXPECT_TRUE(data.still_body_accel[0].isApprox(Eigen::Vector3d(0.0, 0.0, 9.5)));
     EXPECT_EQ(data.scans, 1U);
     EXPECT_EQ(data.lidar_points.size(), 2U);
     ASSERT_EQ(data.moving_lidar_gyro.size(), 1U);

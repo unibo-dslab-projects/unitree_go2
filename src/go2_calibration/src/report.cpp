@@ -55,6 +55,13 @@ namespace go2_calibration {
                 number(c.range.distance, 3) + " m above it",
             "range_offset: " + number(c.range.offset, 3) + " m (every lidar range reads this much too long), fit residual " +
                 number(c.range.residual * 1000.0, 1) + " mm over " + std::to_string(c.range.points) + " floor points",
+            "body_imu gyro_bias: " + std::to_string(c.body_gyro_bias.samples) + " samples, mean " +
+                vector_text(c.body_gyro_bias.mean, 6) + " rad/s, noise std " + vector_text(c.body_gyro_bias.std_dev, 6) +
+                " rad/s",
+            "body_imu accel: mean " + vector_text(c.body_accel.mean, 3) + " m/s^2, |a| " +
+                number(c.body_accel.mean.norm(), 3) + ", accel_scale " + number(c.accel_scale, 4) + ", gravity " +
+                number(c.body_tilt_deg, 2) + " deg from +z",
+            "lidar IMU, not used by go2_preprocessor:",
             "imu_to_body: " + std::to_string(c.imu_to_body.fit.samples) + " turning samples, error rms " +
                 number(c.imu_to_body.fit.rms, 4) + " rad/s, lag " +
                 number(static_cast<double>(c.imu_to_body.lag_ns) / 1e6, 0) + " ms, axis spread " +
@@ -64,12 +71,8 @@ namespace go2_calibration {
             "gyro_leak left: z_to_x " + number(c.leak.z_to_x, 4) + ", z_to_y " + number(c.leak.z_to_y, 4) +
                 " (near 0: the rotation explains the cross-talk)",
             "gravity after imu_to_body: " + number(c.gravity_tilt_deg, 2) + " deg from +z",
+            "checks:",
         };
-        if (c.gravity_tilt_deg > kGravityToleranceDeg) {
-            lines.push_back("  the accelerometer does not share the gyroscope frame: keep zero_acceleration");
-        }
-
-        lines.push_back("checks:");
         for (const Check &check : c.checks) {
             lines.push_back(
                 std::string(check.passed() ? "  PASS " : "  FAIL ") + check.name + ": " + short_number(check.value) +
@@ -87,7 +90,7 @@ namespace go2_calibration {
         out << "# Go2 calibration for " << node_name << ", written by go2_calibration on " << created << "\n"
             << "# from " << source << ".\n"
             << "# Convention: p_body = R * p_sensor + t, R row-major. Body frame: x forward, y left, z up.\n"
-            << "# gyro_bias and gyro_leak are measured after imu_to_body: use them only together with it.\n"
+            << "# body_imu is the IMU of /sportmodestate, already in body axes.\n"
             << "#\n";
         for (const std::string &line : describe(c)) {
             out << "# " << line << '\n';
@@ -98,15 +101,12 @@ namespace go2_calibration {
             << "    lidar_to_body:\n"
             << "      rotation: " << matrix_text(c.lidar_to_body.rotation) << '\n'
             << "      translation: " << vector_text(c.lidar_to_body.translation, 6) << '\n'
-            << "    imu_to_body:\n"
-            << "      rotation: " << matrix_text(c.imu_to_body.fit.rotation) << '\n'
-            << "    gyro_bias:\n"
-            << "      x: " << number(c.gyro_bias.mean.x(), 9) << '\n'
-            << "      y: " << number(c.gyro_bias.mean.y(), 9) << '\n'
-            << "      z: " << number(c.gyro_bias.mean.z(), 9) << '\n'
-            << "    gyro_leak:\n"
-            << "      z_to_x: " << number(c.leak.z_to_x, 6) << '\n'
-            << "      z_to_y: " << number(c.leak.z_to_y, 6) << '\n'
+            << "    body_imu:\n"
+            << "      gyro_bias:\n"
+            << "        x: " << number(c.body_gyro_bias.mean.x(), 9) << '\n'
+            << "        y: " << number(c.body_gyro_bias.mean.y(), 9) << '\n'
+            << "        z: " << number(c.body_gyro_bias.mean.z(), 9) << '\n'
+            << "      accel_scale: " << number(c.accel_scale, 6) << '\n'
             << "    range_offset: " << number(c.range.offset, 4) << '\n';
         return out.str();
     }

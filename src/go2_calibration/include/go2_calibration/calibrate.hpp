@@ -20,7 +20,13 @@ namespace go2_calibration {
         double min_axis_spread = 0.01;       // turns about more than one axis (0.040)
         double max_still_noise = 0.02;       // largest std of the still gyroscope, rad/s (0.007)
         double max_leak = 0.1;               // largest |gyro_leak| left after imu_to_body (0.034)
+        double max_accel_scale_error = 0.1;  // |accel_scale - 1| of the body IMU (0.04 on 2026-10-19)
+        double max_body_tilt_deg = 5.0;      // body IMU gravity against +z, robot standing (1.2 on 2026-10-19)
     };
+
+    // What Point-LIO takes as g (G_m_s2 in its common_lib.h): accel_scale makes the still body
+    // accelerometer read exactly this.
+    constexpr double kGravity = 9.81;
 
     // one quality check: value against limit.
     struct Check {
@@ -40,7 +46,16 @@ namespace go2_calibration {
         double floor_tilt_deg = 0.0;  // floor normal after lidar_to_body, against +z
         RangeOffset range;            // lidar range error, from the bending of the floor
 
-        // lidar IMU, robot turning and tilting: its gyroscope against the body gyroscope.
+        // body IMU of /sportmodestate, robot still: the IMU go2_preprocessor gives Point-LIO. Its
+        // axes are the body axes, so it needs no rotation.
+        VectorStats body_gyro_bias;  // rad/s
+        VectorStats body_accel;      // m/s^2: gravity's reaction, plus the robot's stance tilt
+        double accel_scale = 1.0;    // kGravity / |body_accel.mean|
+        double body_tilt_deg = 0.0;  // body_accel.mean against +z
+
+        // lidar IMU, robot turning and tilting: its gyroscope against the body gyroscope. Not used
+        // by go2_preprocessor; imu_to_lidar_deg shows whether the body IMU axes and lidar_to_body
+        // agree, as long as the lidar IMU shares the cloud's axes (0.9 deg apart on our Go2).
         ImuRotationFit imu_to_body;
         double axis_spread = 0.0;
         double imu_to_lidar_deg = 0.0;  // angle between imu_to_body and lidar_to_body
@@ -54,8 +69,9 @@ namespace go2_calibration {
         bool passed() const;  // every check passed
     };
 
-    /// The whole calibration from the buffer's data: lidar mount and floor, range offset, IMU
-    /// rotation, bias and leak, then the checks against `limits`. Throws std::runtime_error naming
-    /// what is missing: no matched lidar point, no floor, no turning, no still gyroscope sample.
+    /// The whole calibration from the buffer's data: lidar mount and floor, range offset, body IMU
+    /// bias and scale, lidar IMU rotation, bias and leak, then the checks against `limits`. Throws
+    /// std::runtime_error naming what is missing: no matched lidar point, no floor, no turning, no
+    /// still sample of either IMU.
     Calibration calibrate(const CalibrationData &data, const Limits &limits = Limits{});
 }

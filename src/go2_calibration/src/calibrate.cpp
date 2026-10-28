@@ -35,6 +35,9 @@ namespace go2_calibration {
         if (data.still_gyro.empty()) {
             throw std::runtime_error("no /utlidar/imu sample while the robot stood still");
         }
+        if (data.still_body_gyro.empty()) {
+            throw std::runtime_error("no /sportmodestate sample while the robot stood still");
+        }
 
         Calibration result;
 
@@ -49,7 +52,14 @@ namespace go2_calibration {
         result.floor_tilt_deg = tilt_from_up_deg(result.lidar_to_body.rotation * floor->normal);
         result.range = fit_range_offset(data.floor_points, *floor);
 
-        // 2. Lidar IMU rotation, from the turns and tilts.
+        // 2. Body IMU, robot still. A scale and not a bias: standing still shows only the reading
+        // along gravity, which cannot tell the two apart, and Point-LIO's own acc_norm is a scale too.
+        result.body_gyro_bias = mean_and_std(data.still_body_gyro);
+        result.body_accel = mean_and_std(data.still_body_accel);
+        result.accel_scale = kGravity / result.body_accel.mean.norm();
+        result.body_tilt_deg = tilt_from_up_deg(result.body_accel.mean);
+
+        // 3. Lidar IMU rotation, from the turns and tilts.
         const ImuRotationSearch search;
         const auto rotation = fit_imu_rotation(data.moving_lidar_gyro, data.moving_body_gyro, search);
         if (!rotation) {
@@ -60,7 +70,7 @@ namespace go2_calibration {
         result.axis_spread = axis_spread(data.moving_lidar_gyro);
         result.imu_to_lidar_deg = angle_between_deg(imu_to_body, result.lidar_to_body.rotation);
 
-        // 3. Bias and gravity, robot still, in the body frame.
+        // 4. Lidar IMU bias and gravity, robot still, in the body frame.
         std::vector<Eigen::Vector3d> still_rates;
         for (const Eigen::Vector3d &rate : data.still_gyro) {
             still_rates.push_back(imu_to_body * rate);
@@ -68,15 +78,18 @@ namespace go2_calibration {
         result.gyro_bias = mean_and_std(still_rates);
         result.gravity_tilt_deg = tilt_from_up_deg(imu_to_body * mean_and_std(data.still_accel).mean);
 
-        // 4. Cross-talk left once rotation and bias are taken out.
+        // 5. Cross-talk left once rotation and bias are taken out.
         std::vector<Eigen::Vector3d> moving_rates;
         for (const TimedVector &rate : data.moving_lidar_gyro) {
             moving_rates.push_back(imu_to_body * rate.value - result.gyro_bias.mean);
         }
         result.leak = fit_leak(moving_rates);
 
-        // 5. Checks.
+        // 6. Checks.
         result.checks = {
+            at_most("body gyroscope noise, rad/s", result.body_gyro_bias.std_dev.maxCoeff(), limits.max_still_noise),
+            at_most("body accel_scale error", std::abs(result.accel_scale - 1.0), limits.max_accel_scale_error),
+            at_most("body gravity tilt, deg", result.body_tilt_deg, limits.max_body_tilt_deg),
             at_least("matched lidar points", static_cast<double>(result.lidar_to_body.samples), limits.min_matched_points),
             at_most("lidar_to_body error rms, mm", result.lidar_to_body.rms * 1000.0, limits.max_mount_error_mm),
             at_most("floor tilt after lidar_to_body, deg", result.floor_tilt_deg, limits.max_floor_tilt_deg),

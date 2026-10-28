@@ -92,7 +92,7 @@ deletes anything itself.
 ## Notes
 
 - Playing a bag with `/sportmodestate` on the laptop needs the `unitree_go` messages in the
-  container (see [go2_calibration](../../src/go2_calibration/README.md), "Laptop");
-  without them, play the other topics only (`--topics /utlidar/cloud /utlidar/imu`).
+  container (see [go2_calibration](../../src/go2_calibration/README.md), "Laptop"). The
+  mapping stack needs it: Point-LIO takes its IMU from `/sportmodestate`.
 - To add a bag type, copy a `record_<type>.sh`, change its variables, and add the expected rate of
   any new topic to `EXPECTED_HZ` in `common.sh`.

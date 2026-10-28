@@ -73,6 +73,14 @@ TEST(BodyGyro, ReadsTheImuStateGyroscope)
     EXPECT_TRUE(body_gyro(state).isApprox(Eigen::Vector3d(0.5, -0.25, 1.0)));
 }
 
+TEST(BodyAccel, ReadsTheImuStateAccelerometer)
+{
+    unitree_go::msg::SportModeState state;
+    state.imu_state.accelerometer = {-0.25F, 0.5F, 9.5F};
+
+    EXPECT_TRUE(body_accel(state).isApprox(Eigen::Vector3d(-0.25, 0.5, 9.5)));
+}
+
 TEST(ToRequest, StopMoveAndBalanceStandCarryNoParameter)
 {
     const auto stop = to_request(Command{});

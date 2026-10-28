@@ -65,7 +65,8 @@ namespace go2_calibration {
                 const auto imu = deserialize<sensor_msgs::msg::Imu>(*message);
                 buffer.add_lidar_imu(time_ns, to_eigen(imu.angular_velocity), to_eigen(imu.linear_acceleration));
             } else if (topic == topics.body_state) {
-                buffer.add_body_gyro(time_ns, body_gyro(deserialize<unitree_go::msg::SportModeState>(*message)));
+                const auto state = deserialize<unitree_go::msg::SportModeState>(*message);
+                buffer.add_body_imu(time_ns, body_gyro(state), body_accel(state));
             } else if (buffer.wants_scans()) {  // one of the two clouds; decoding them is the slow part
                 const auto cloud = deserialize<sensor_msgs::msg::PointCloud2>(*message);
                 buffer.add_scan(to_nanoseconds(cloud.header.stamp), to_scan_points(cloud), topic == topics.cloud_base);
