@@ -17,14 +17,6 @@
     <link href="./theme/theme.css" rel="stylesheet">
     <style>
 
-body {
-    --qd-content-width: 768.0px;}
-
-body.quarkdown-slides.quarkdown-slides .reveal {
-    width: 768.0px;}
-
-@page {
-    size: 768.0px auto;}
 </style>
     <script>prepare(new DocsDocument());</script>
 <template id="sidebar-template"><nav class="sidebar" role="doc-toc"><ol><li data-target-id="mapping-stack" data-depth="2"><a href="#mapping-stack">Mapping stack</a></li><li data-target-id="saving-a-map" data-depth="2"><a href="#saving-a-map">Saving a map</a></li></ol></nav>
@@ -45,7 +37,45 @@ body.quarkdown-slides.quarkdown-slides .reveal {
         <div class="position-middle"></div>
         <div class="position-bottom"></div>
       </aside>
-      <main><div class="page-margin-content page-margin-top-left" data-on-left-page="top-left" data-on-right-page="top-left"><p><a href="./main">Unitree Go2</a></p></div><div class="page-margin-content page-margin-top-right" data-on-left-page="top-right" data-on-right-page="top-right"><p><a href="https://github.com/unibo-dslab-projects/unitree_go2">Source</a></p></div><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Patrick+Hand&display=swap">
+      <main><div class="page-margin-content page-margin-top-left" data-on-left-page="top-left" data-on-right-page="top-left"><p><a href="./main"><i class="icon-image bi bi-book" aria-hidden="true"></i> Unitree Go2</a></p></div><div class="page-margin-content page-margin-top-right" data-on-left-page="top-right" data-on-right-page="top-right"><p><a href="https://github.com/unibo-dslab-projects/unitree_go2" title="Source repository"><i class="icon-image bi bi-github" aria-hidden="true"></i></a></p></div><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Patrick+Hand&display=swap">
+<style>
+body.quarkdown.quarkdown-docs > header a:has(> .bi) {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+body.quarkdown.quarkdown-docs > header a > .bi {
+  font-size: 1.3em;
+}
+/* the minimal layout fills the current page link with red */
+body.quarkdown.quarkdown-docs aside nav[data-role=page-list] a[aria-current] {
+  background-color: transparent;
+  color: var(--qd-link-color);
+}
+/* quarkdown gives each sidebar 20vw and the page 45rem; here the sidebars hug
+   their links and the page takes the rest. below 1200px quarkdown stacks them. */
+@media screen and (min-width: 1201px) {
+  body.quarkdown.quarkdown-docs > :is(header, .content-wrapper) > aside {
+    flex: 0 0 auto;
+    width: max-content;
+    max-width: 25vw;
+    margin: 0;
+    padding-left: 40px;
+    padding-right: 40px;
+  }
+  /* quarkdown adds 64px next to each sidebar through :first-child and :last-child */
+  body.quarkdown.quarkdown-docs > :is(header, .content-wrapper) > aside:is(:first-child, :last-child) {
+    margin: 0;
+  }
+  body.quarkdown.quarkdown-docs > :is(header, .content-wrapper) > main {
+    flex: 1 1 auto;
+    min-width: 0;
+    max-width: none;
+    padding: 0 48px;
+    box-sizing: border-box;
+  }
+}
+</style>
 <script src="https://cdn.jsdelivr.net/npm/svg2roughjs@3.2.3/dist/svg2roughjs.umd.min.js"></script>
 <script>
 (function () {
