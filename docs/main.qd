@@ -1,0 +1,35 @@
+.docname {Unitree Go2}
+.include {docs}
+
+Documentation of the mapping and navigation work on the Unitree Go2 robot.
+
+## Mapping stack
+
+The packages that turn the Go2's lidar into a map, and the topics between them.
+
+.mermaid
+    flowchart LR
+      cloud["/utlidar/cloud"] --> pre[go2_preprocessor]
+      state["/sportmodestate"] --> pre
+      calib[(go2_calibration.yaml)] -.-> pre
+      pre -->|"/utlidar/transformed_cloud"| lio[Point-LIO]
+      pre -->|"/utlidar/transformed_imu"| lio
+      lio -->|"/cloud_registered"| mb[map_builder]
+      lio -->|"/aft_mapped_to_init"| mb
+      mb --> pcd[(map.pcd)]
+      mb --> tum[(trajectory.tum)]
+
+## Saving a map
+
+`map_builder` keeps every scan in memory and writes the files only when the session ends.
+
+.mermaid
+    sequenceDiagram
+      participant P as go2_preprocessor
+      participant L as Point-LIO
+      participant M as map_builder
+      P->>L: /utlidar/transformed_cloud, /utlidar/transformed_imu
+      L->>M: /cloud_registered (each scan)
+      L->>M: /aft_mapped_to_init (pose)
+      Note over M: Ctrl-C
+      M->>M: write map.pcd and trajectory.tum
