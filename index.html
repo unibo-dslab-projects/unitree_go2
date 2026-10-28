@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta name="generator" content="Quarkdown">
+    <meta charset="UTF-8">
+    <meta name="description" content="Unitree Go2 mapping and navigation">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="quarkdown:root-path" content=".">
+    <meta name="quarkdown:search-index" content="./search-index.json">
+    <title>Unitree Go2</title>
+    <script src="./script/quarkdown.min.js"></script>
+    <script>const capabilities = window.quarkdownCapabilities</script>
+    <script>window.texMacros = {}</script>
+    <link href="./lib/bootstrap-icons/bootstrap-icons.min.css" rel="stylesheet">
+    <script src="./lib/mermaid/mermaid.min.js"></script>
+    <script>capabilities.mermaid = true;</script>
+    <link href="./theme/theme.css" rel="stylesheet">
+    <style>
+
+body {
+    --qd-content-width: 768.0px;}
+
+body.quarkdown-slides.quarkdown-slides .reveal {
+    width: 768.0px;}
+
+@page {
+    size: 768.0px auto;}
+</style>
+    <script>prepare(new DocsDocument());</script>
+<template id="sidebar-template"><nav class="sidebar" role="doc-toc"><ol><li data-target-id="mapping-stack" data-depth="2"><a href="#mapping-stack">Mapping stack</a></li><li data-target-id="saving-a-map" data-depth="2"><a href="#saving-a-map">Saving a map</a></li></ol></nav>
+</template>  </head>
+  <body class="quarkdown quarkdown-docs">
+    <header>
+      <aside class="margin-area"></aside>
+      <main>
+        <div class="search-wrapper">
+          <div class="search-field"><i class="bi bi-search"></i><input type="text" id="search-input" placeholder="Search" autocomplete="off"><kbd>/</kbd></div>
+        </div>
+      </main>
+      <aside class="margin-area"></aside>
+    </header>
+    <div class="content-wrapper">
+      <aside class="margin-area" id="margin-area-left">
+        <div class="position-top"></div>
+        <div class="position-middle"></div>
+        <div class="position-bottom"></div>
+      </aside>
+      <main><div class="page-margin-content page-margin-top-left" data-on-left-page="top-left" data-on-right-page="top-left"><p><a href="./main">Unitree Go2</a></p></div><div class="page-margin-content page-margin-top-right" data-on-left-page="top-right" data-on-right-page="top-right"><p><a href="https://github.com/unibo-dslab-projects/unitree_go2">Source</a></p></div><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Patrick+Hand&display=swap">
+<script src="https://cdn.jsdelivr.net/npm/svg2roughjs@3.2.3/dist/svg2roughjs.umd.min.js"></script>
+<script>
+(function () {
+  var FONT = "Patrick Hand";
+  var ROUGHNESS = 1.8;
+  // types the bundled mermaid draws by hand itself; svg2roughjs redraws the rest
+  var NATIVE = /^(flowchart|class|state|er$|requirement|mindmap|kanban)/;
+  var CONFIG = {
+    startOnLoad: false,
+    look: "handDrawn",
+    handDrawnSeed: 7,
+    theme: "neutral",
+    // svg2roughjs only copies svg text, not html labels
+    htmlLabels: false,
+    flowchart: { htmlLabels: false },
+    // neutral leaves note text white, which svg2roughjs keeps on a white note
+    themeVariables: { fontFamily: '"' + FONT + '", cursive', noteBkgColor: "#fff5ad", noteTextColor: "#333333" }
+  };
+
+  function patch(m) {
+    if (m.__sketch) return;
+    m.__sketch = true;
+    // quarkdown calls initialize with its own options, so ours are merged on top
+    var init = m.initialize.bind(m);
+    m.initialize = function (cfg) { init(Object.assign({}, cfg, CONFIG)); };
+    // mermaid sizes boxes from the font, so it must be loaded first
+    var render = m.render.bind(m);
+    m.render = function () {
+      var args = arguments;
+      return document.fonts.load('16px "' + FONT + '"').catch(function () {})
+        .then(function () { return render.apply(null, args); });
+    };
+    m.initialize({});
+  }
+
+  function sketch(svg) {
+    var type = svg.getAttribute("aria-roledescription") || "";
+    if (NATIVE.test(type) || svg.hasAttribute("data-sketched")) return;
+    svg.setAttribute("data-sketched", "");
+    // svg2roughjs sizes from width/height, and mermaid writes width="100%"
+    var vb = svg.viewBox.baseVal;
+    var width = svg.style.width;
+    svg.setAttribute("width", vb.width);
+    svg.setAttribute("height", vb.height);
+    var host = document.createElement("div");
+    var s = new svg2roughjs.Svg2Roughjs(host, svg2roughjs.OutputType.SVG);
+    s.svg = svg;
+    s.fontFamily = FONT;
+    s.randomize = false;
+    s.roughConfig = { roughness: ROUGHNESS, bowing: 1, fillStyle: "hachure", hachureGap: 6, fillWeight: 0.8, seed: 7 };
+    s.sketch().then(function () {
+      var out = host.querySelector("svg");
+      out.setAttribute("data-sketched", "");
+      svg.replaceWith(out);
+      // mermaid viewBox often starts negative; fit the box to what was drawn
+      var box = out.getBBox();
+      var pad = 6;
+      out.setAttribute("viewBox", (box.x - pad) + " " + (box.y - pad) + " " + (box.width + 2 * pad) + " " + (box.height + 2 * pad));
+      out.removeAttribute("width");
+      out.removeAttribute("height");
+      out.style.width = width || "100%";
+      out.style.maxWidth = "100%";
+    }).catch(function (e) { console.error("mermaid sketch failed", e); });
+  }
+
+  if (window.mermaid) patch(window.mermaid);
+  else document.addEventListener("DOMContentLoaded", function () { if (window.mermaid) patch(window.mermaid); });
+
+  // quarkdown swaps the svg in, sometimes from its sessionStorage cache, so watch for it
+  new MutationObserver(function () {
+    document.querySelectorAll(".mermaid > svg:not([data-sketched])").forEach(sketch);
+  }).observe(document.documentElement, { childList: true, subtree: true });
+})();
+</script><div class="page-margin-content page-margin-bottom-center" data-on-left-page="bottom-center" data-on-right-page="bottom-center"><p>Unitree Go2 · Nicolò Ghignatti</p></div><div class="page-margin-content page-margin-left-top" data-on-left-page="left-top" data-on-right-page="left-top"><nav role="navigation" data-role="page-list"><h3 id="overview" data-decorative="">Overview</h3><ul><li><a href="./main">Home</a></li></ul></nav></div><div class="page-margin-content page-margin-right-top" data-on-left-page="right-top" data-on-right-page="right-top"><h3 id="table-of-contents">On this page</h3><nav role="table-of-contents" data-role="table-of-contents"><ol><li data-target-id="mapping-stack" data-depth="2"><a href="#mapping-stack">Mapping stack</a></li><li data-target-id="saving-a-map" data-depth="2"><a href="#saving-a-map">Saving a map</a></li></ol></nav></div><h1 id="unitree-go2" data-decorative="">Unitree Go2</h1><p>Documentation of the mapping and navigation work on the Unitree Go2 robot.</p><h2 id="mapping-stack">Mapping stack</h2><p>The packages that turn the Go2&rsquo;s lidar into a map, and the topics between them.</p><figure><pre class="mermaid">flowchart LR
+  cloud[&quot;/utlidar/cloud&quot;] --&gt; pre[go2_preprocessor]
+  state[&quot;/sportmodestate&quot;] --&gt; pre
+  calib[(go2_calibration.yaml)] -.-&gt; pre
+  pre --&gt;|&quot;/utlidar/transformed_cloud&quot;| lio[Point-LIO]
+  pre --&gt;|&quot;/utlidar/transformed_imu&quot;| lio
+  lio --&gt;|&quot;/cloud_registered&quot;| mb[map_builder]
+  lio --&gt;|&quot;/aft_mapped_to_init&quot;| mb
+  mb --&gt; pcd[(map.pcd)]
+  mb --&gt; tum[(trajectory.tum)]</pre></figure><h2 id="saving-a-map">Saving a map</h2><p><span class="codespan-content"><code>map_builder</code></span> keeps every scan in memory and writes the files only when the session ends.</p><figure><pre class="mermaid">sequenceDiagram
+  participant P as go2_preprocessor
+  participant L as Point-LIO
+  participant M as map_builder
+  P-&gt;&gt;L: /utlidar/transformed_cloud, /utlidar/transformed_imu
+  L-&gt;&gt;M: /cloud_registered (each scan)
+  L-&gt;&gt;M: /aft_mapped_to_init (pose)
+  Note over M: Ctrl-C
+  M-&gt;&gt;M: write map.pcd and trajectory.tum</pre></figure>
+        <div id="footnote-area">
+          <div class="footnote-rule"></div>
+        </div>
+        <div id="sibling-pages-button-area"></div>
+        <footer>
+          <div class="position-left"></div>
+          <div class="position-center"></div>
+          <div class="position-right"></div>
+        </footer>
+      </main>
+      <aside class="margin-area" id="margin-area-right">
+        <div class="position-top"></div>
+        <div class="position-middle"></div>
+        <div class="position-bottom"></div>
+      </aside>
+    </div>
+  </body>
+</html>
