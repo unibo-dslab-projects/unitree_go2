@@ -12,11 +12,16 @@ namespace go2_preprocessor {
     // = SensorCalibration::lidar_to_body. Sets frame_id to "body".
     void lidar_to_body(PointCloud &cloud, const Eigen::Isometry3f &transform);
 
+    // every lidar range reads `offset` m too long: moves each point back towards the lidar by that
+    // much, in the lidar frame. drops points at or inside the offset, no valid range is left.
+    void shorten_ranges(PointCloud &cloud, float offset);
+
     // returns the points outside the box, in their original order.
     std::vector<Point> remove_robot_points(const std::vector<Point> &points, const Box &box);
 
-    // full lidar step: lidar_to_body, then removes the points inside robot_body,
+    // full lidar step: shorten_ranges, lidar_to_body, then removes the points inside robot_body,
     // where the lidar sees the robot's own back. the box is defined in the body
-    // frame, so the order matters.
-    void preprocess_cloud(PointCloud &cloud, const Eigen::Isometry3f &lidar_to_body, const Box &robot_body);
+    // frame, so the order matters. range_offset 0 leaves the ranges as they are.
+    void preprocess_cloud(
+        PointCloud &cloud, const Eigen::Isometry3f &lidar_to_body, const Box &robot_body, float range_offset = 0.0F);
 }

@@ -162,7 +162,7 @@ namespace go2_preprocessor {
 
         const std::size_t points_in = cloud.points.size();
 
-        preprocess_cloud(cloud, calibration_.lidar_to_body, robot_body_);
+        preprocess_cloud(cloud, calibration_.lidar_to_body, robot_body_, calibration_.range_offset);
 
         cloud_publisher_->publish(to_message(cloud));
 
