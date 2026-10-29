@@ -33,7 +33,7 @@ This package fixes all of these in one place, so nobody types them by hand.
       cfg[(config folder)] --> bring
 
 The package does not run anything itself. It tells ROS what to start. The three nodes it starts have
-their own pages: [go2_preprocessor](./go2_preprocessor.qd) is done, `map_builder` comes next.
+their own pages: [go2_preprocessor](./go2_preprocessor.qd) and [map_builder](./map_builder.qd).
 
 ## What is inside
 

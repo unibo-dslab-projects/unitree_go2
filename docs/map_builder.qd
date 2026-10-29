@@ -1,0 +1,376 @@
+.include {docs}
+
+# map_builder
+
+`map_builder` collects Point-LIO's output into one map and one path, and saves both to disk.
+
+**What.** One ROS 2 node (`ros2 run map_builder map_builder`). It listens to the scans and the poses
+that Point-LIO publishes. It keeps the scans in a **voxel map**: space is cut into small cubes, and
+each cube holds one point. It also keeps every pose, in a list. It publishes the new cubes while you
+map, and on Ctrl-C it writes `map.pcd` and `trajectory.tum`.
+
+**Why.** Point-LIO sends the same wall again with every scan, about 10 times a second. Saved as they
+come, the points would pile up and the file would be huge. Point-LIO also does not save anything by
+default. `map_builder` removes the repeats and keeps the result, so a walk ends with two small files
+that the rest of the thesis can use.
+
+**When.** Every time you map. `mapping.launch.py` starts it, on the robot or on the laptop.
+
+## Where it sits
+
+.mermaid
+    flowchart TB
+      lio[Point-LIO] -->|"/cloud_registered"| mb[map_builder]
+      lio -->|"/aft_mapped_to_init"| mb
+      cfg[("map_builder.yaml")] --> mb
+      mb -->|"/map_builder/delta"| viewer["viewer, later"]
+      mb -->|"/map_builder/pose"| viewer
+      mb -->|"/map_builder/get_map"| viewer
+      mb -->|"Ctrl-C or save"| disk[("map.pcd and trajectory.tum")]
+
+The inputs are called `cloud` and `odom` inside the node. [go2_mapping_bringup](./go2_mapping_bringup.qd)
+points them at Point-LIO's two topics. The frame of the scans is `camera_init`, Point-LIO's world
+frame: the origin is where the robot stood at the start, and x points where it looked.
+
+## What it does
+
+| Data | What the node does |
+|---|---|
+| Each scan | Puts every point in a cube. A cube that is already full ignores the new point |
+| Each pose | Appends it to the path. A pose that is not newer than the last one is skipped |
+| New cubes | Sends them as a **delta** twice a second |
+| The whole map | On request: a service answers with every point. Or on a topic, if you turn it on |
+| On save | Writes the map as a PCD file and the path as a TUM file |
+
+## Quick start
+
+With the whole chain, which is the normal way:
+
+```bash
+tools/mapping/map.sh
+```
+
+The node alone, if Point-LIO runs elsewhere:
+
+```bash
+ros2 run map_builder map_builder --ros-args \
+    --params-file src/go2_mapping_bringup/config/map_builder.yaml \
+    -p output_dir:=$HOME/maps \
+    -r cloud:=/cloud_registered -r odom:=/aft_mapped_to_init
+```
+
+Save in the middle of a run, without stopping:
+
+```bash
+ros2 service call /map_builder/save std_srvs/srv/Trigger
+```
+
+The answer holds the folder name. A run is written to `<output_dir>/<time of the first scan, UTC>/`,
+for example `~/maps/2026-10-19T14:35:23/`.
+
+## How it works
+
+### The code in one picture
+
+The code is split in three parts, so that the maths does not need ROS and a test does not need PCL.
+An arrow means "uses".
+
+.mermaid
+    flowchart TB
+      subgraph CORE["map_builder_core: plain C++"]
+        vm["voxel_map: VoxelMap, Point"]
+        tr["trajectory: Trajectory, Pose"]
+      end
+      subgraph IO["map_builder_io: needs PCL"]
+        mio["map_io: make_run_folder, save_pcd, save_tum"]
+      end
+      subgraph EXE["executable map_builder: needs ROS"]
+        main["main: spin, then save_at_exit"]
+        node["node: MapBuilderNode"]
+        cm["cloud_msg: from_message, to_message"]
+      end
+      tool["voxel_count: offline check"]
+      main --> node
+      node --> cm
+      node --> mio
+      node --> vm
+      node --> tr
+      cm --> vm
+      mio --> vm
+      mio --> tr
+      tool --> vm
+
+`voxel_count` is a small program with no ROS. It loads a PCD file and puts it in a voxel map twice.
+The second time nothing must be added: it proves that no two saved points share a cube.
+
+### Start-up
+
+All the parameters are read-only: a later `ros2 param set` fails with an error.
+
+.mermaid
+    sequenceDiagram
+      participant R as ROS parameters
+      participant N as MapBuilderNode
+      participant T as startup timer
+      participant D as DDS graph
+      N->>R: declare voxel_size, three rates, output_dir, save_on_exit
+      N->>N: a rate of 0 or less is an error, except full_map_rate_hz
+      N->>N: draw run_id, a random number
+      N->>N: 2 subscriptions, 3 publishers, 2 services, 2 timers
+      N->>N: full_map_rate_hz above 0: also a publisher and a timer
+      N->>N: log voxel size, rates, run_id and output_dir
+      T->>N: after 2 s, check_single_instance
+      N->>D: how many publishers on /map_builder/delta
+      D-->>N: 2 or more means another map_builder runs
+      N->>N: stop with a FATAL message
+
+The `run_id` tells a viewer that a new map has begun. The check after 2 s is there because two
+`map_builder`s on the same topics would send two different maps, and a viewer cannot tell them apart.
+
+### A cloud message
+
+.mermaid
+    sequenceDiagram
+      participant P as Point-LIO
+      participant N as on_cloud
+      participant C as cloud_msg
+      participant V as VoxelMap
+      P->>N: /cloud_registered
+      N->>C: from_message(message)
+      C-->>N: list of Point x y z intensity
+      N->>N: first scan: keep frame_id and the stamp
+      N->>N: later scan with another frame_id: warn and drop it
+      N->>V: insert(points)
+      V-->>N: how many points were new
+      N->>N: remember the stamp of this scan
+
+A cloud that cannot be read (its data is shorter than `width * height * point_step`, or a field is
+missing) is logged and skipped. The first scan fixes the map frame and the name of the save folder.
+Every log line "Voxels N, added M points from cloud" comes at most every 2 s.
+
+### The voxel map
+
+`VoxelMap::insert` does this for every point. A point that is not a number (NaN or infinity) is
+skipped.
+
+.mermaid
+    flowchart TD
+      p["a point x, y, z"] --> f{"finite?"}
+      f -->|no| skip(["skip"])
+      f -->|yes| k["key = floor of x, y, z divided by voxel_size"]
+      k --> e{"key already in the map?"}
+      e -->|yes| ig(["ignore the point"])
+      e -->|no| add["store the point under the key"]
+      add --> pend["also append it to the pending list"]
+
+`floor`, not a plain cast, because a cast rounds towards 0 and puts -0.03 and +0.03 in the same cube.
+The map is a hash map (`unordered_map`) with the key hashed from three large primes, a method called
+spatial hashing.
+
+**Example.** The numbers are made up. The voxel size is 0.05 m.
+
+| Point (x, y, z) | x, y, z divided by 0.05 | Key | Result |
+|---|---|---|---|
+| (1.23, -0.03, 0.51) | 24.6, -0.6, 10.2 | (24, -1, 10) | new, stored |
+| (1.24, -0.04, 0.52) | 24.8, -0.8, 10.4 | (24, -1, 10) | same cube, ignored |
+| (1.26, -0.03, 0.51) | 25.2, -0.6, 10.2 | (25, -1, 10) | new, stored |
+
+The first point of a cube wins. It is not averaged with the later ones.
+
+**Real numbers.** On the straight walk `2026-10-19_line_01` (5.4 m), voxel 0.05 m gives about 44,700
+points. Voxel 0.10 m gave 14,476 points on the same walk, and 0.05 m gave 45,195 on an earlier run.
+
+### An odometry message and the three timers
+
+Nothing is sent from the callbacks. They only store. Three timers send what was stored.
+
+.mermaid
+    sequenceDiagram
+      participant P as Point-LIO
+      participant N as MapBuilderNode
+      participant S as Trajectory
+      participant V as VoxelMap
+      participant W as viewer
+      P->>N: /aft_mapped_to_init
+      N->>S: add(pose)
+      S-->>N: false, if the stamp is not newer than the last one
+      N->>N: keep it as the latest pose, not yet published
+      Note over N: every 0.1 s, pose timer
+      N->>W: /map_builder/pose, if there is a new one
+      Note over N: every 0.5 s, delta timer
+      N->>V: last_voxel_points_added
+      V-->>N: the pending points, and the list is emptied
+      N->>W: /map_builder/delta with run_id and seq
+
+The delta holds **only the new cubes**, one point each, so it stays small. `seq` counts 1, 2, 3 and
+so on inside one run. `stamp` is the newest scan inside the delta. A delta with no new points is not
+sent, so a still robot sends nothing.
+
+### How a viewer keeps in step
+
+A viewer can join late or miss a message. The rules are in the message files `MapDelta.msg` and
+`GetMap.srv`.
+
+.mermaid
+    sequenceDiagram
+      participant W as viewer
+      participant N as map_builder
+      W->>N: get_map
+      N->>N: send the pending points as a delta first
+      N-->>W: run_id 7, seq 12, all points
+      N->>W: delta seq 11
+      W->>W: seq 11 is not above 12: ignore
+      N->>W: delta seq 13
+      W->>W: add the points
+      N->>W: delta seq 15
+      W->>W: 14 is missing: call get_map again
+      N->>W: delta with another run_id
+      W->>W: new map: throw away mine, call get_map
+
+`get_map` first sends the pending points as a delta. This way the snapshot matches `seq` exactly, and
+the viewer never has a hole between the snapshot and the next delta.
+
+### Save
+
+.mermaid
+    sequenceDiagram
+      participant U as you
+      participant S as save service
+      participant N as MapBuilderNode
+      participant M as map_io
+      participant X as main
+      U->>S: call save
+      S->>N: on_save
+      N->>M: make_run_folder(output_dir, time of the first scan)
+      M-->>N: a new folder, with _1, _2 if the name exists
+      N->>M: save_pcd(folder, all points)
+      N->>M: save_tum(folder, trajectory)
+      N-->>U: success and the folder name
+      U->>X: Ctrl-C
+      X->>X: spin returns
+      X->>N: save_at_exit
+      N->>M: the same three calls, if save_on_exit is true
+
+Saving twice in one run gives two folders, `<time>` and `<time>_1`. Save fails with `map is empty` if
+no scan came, and with `output_dir is not set` if the node has no output folder. A failed save at
+exit is logged and does not crash the node.
+
+### Types
+
+.mermaid
+    classDiagram
+      class MapBuilderNode
+      class VoxelMap
+      class Trajectory
+      class Point
+      class VoxelKey
+      class Pose
+      MapBuilderNode *-- VoxelMap : map_
+      MapBuilderNode *-- Trajectory : trajectory_
+      VoxelMap *-- VoxelKey : many, one per cube
+      VoxelMap *-- Point : one per key
+      Trajectory *-- Pose : poses_
+
+| File | Does |
+|---|---|
+| `main` | Starts the node, spins, then calls `save_at_exit` |
+| `node` | The two callbacks, the timers, the services, the single-instance check |
+| `cloud_msg` | `PointCloud2` message to a list of `Point` and back |
+| `voxel_map` | `Point`, `VoxelKey`, the hash, and `VoxelMap` with `insert`, `last_voxel_points_added`, `all` |
+| `trajectory` | `Pose`, and `Trajectory` with `add` and `write_tum` |
+| `map_io` | The run folder name, the PCD writer, the TUM writer |
+| `voxel_count` | Offline check of a PCD file, not part of the node |
+
+The message types are in the small package `go2_mapping_msgs`: `MapDelta.msg` (header, `run_id`, `seq`,
+a `PointCloud2` of the new points) and `GetMap.srv` (no request, answers with `run_id`, `seq` and a
+`PointCloud2` of all points).
+
+## Output files
+
+`map.pcd` has one point per cube, binary, fields `x y z intensity`, in metres, frame `camera_init`.
+
+`trajectory.tum` has one line per pose: `stamp x y z qx qy qz qw`. The stamp is in seconds with 9
+digits after the dot. Example line, made up:
+
+```
+1760884523.123456789 1.204300 -0.031200 0.002100 0.000100 -0.002300 0.014000 0.999900
+```
+
+The path starts at (0, 0, 0). For a walk that ends on its start mark, the distance of the last pose
+from the origin is the drift of Point-LIO.
+
+## Parameters
+
+All are read-only, read once at start-up.
+
+| Parameter | Default | In `map_builder.yaml` | Meaning |
+|---|---|---|---|
+| `voxel_size` | 0.05 | 0.05 | m. Side of a cube. Must be above 0 |
+| `delta_rate_hz` | 2.0 | 2.0 | How often the new cubes are sent. Above 0 |
+| `pose_rate_hz` | 10.0 | 10.0 | How often the pose is sent. Above 0 |
+| `full_map_rate_hz` | 0.0 | 0.0 | The whole map on a topic. 0 is off |
+| `output_dir` | empty | set by the launch file | Folder for the runs. Empty makes save fail |
+| `save_on_exit` | false | true | Save when you press Ctrl-C |
+
+## Topics and services
+
+| Direction | Name | Type | QoS |
+|---|---|---|---|
+| in | `cloud` | `sensor_msgs/PointCloud2` | reliable, queue 100 |
+| in | `odom` | `nav_msgs/Odometry` | reliable, queue 100 |
+| out | `/map_builder/delta` | `go2_mapping_msgs/MapDelta` | reliable, queue 25 |
+| out | `/map_builder/pose` | `geometry_msgs/PoseStamped` | reliable, queue 1 |
+| out | `/map_builder/full_map` | `sensor_msgs/PointCloud2` | reliable, transient local, queue 1. Only if the rate is above 0 |
+| service | `/map_builder/get_map` | `go2_mapping_msgs/GetMap` | |
+| service | `/map_builder/save` | `std_srvs/Trigger` | |
+
+Transient local means a viewer that connects late still gets the last map. Turn `full_map_rate_hz` on
+only to look at the map in RViz: every message holds the whole map.
+
+## Build and test
+
+```bash
+cd ~/unitree_go2
+source ~/unitree_ros2/setup.sh
+vcs import src < go2.repos
+colcon build --packages-up-to map_builder
+```
+
+It needs PCL (the point cloud library) for the PCD file. The package has no unit tests yet. It was
+checked by replaying a bag through the whole chain on the laptop. The steps are in
+`src/map_builder/README.md`. A correct run of `2026-10-19_line_01` at `-r 0.25` gives:
+
+| Check | Real result |
+|---|---|
+| Points in `map.pcd` | 44,641 and 44,729 in two runs |
+| Lines in `trajectory.tum` | 297 |
+| x of the last pose | 5.33 to 5.35 m, the tape says 5.40 m |
+| `ros2 run map_builder voxel_count <map.pcd> 0.05` | `second inserted: 0` |
+| Last `seq` | about 150, depends on timing |
+
+If the map has about 18,700 points and the end is at x 7.36 m, Point-LIO ran with the old 0.5 m filter
+size. Check `filter_size_surf` and `filter_size_map` in `point_lio.yaml`.
+
+## Common problems
+
+| Symptom | Cause | Fix |
+|---|---|---|
+| `another map builder is running`, then the node stops | An old `map_builder` is still alive | `pgrep -af map_builder`, stop it, start again |
+| `save` answers `map is empty` | No scan arrived | Check `ros2 topic hz /cloud_registered` |
+| `Frame ID mismatch: expected camera_init` | Something else publishes on `/cloud_registered` | `ros2 topic info -v /cloud_registered` |
+
+## Known gaps
+
+- **No unit tests.** `VoxelMap`, `Trajectory` and `map_io` are plain C++ and easy to test. The CMake
+  file has the lines ready but commented out. The only checks are the bag replay and `voxel_count`.
+- **The first point of a cube stays, the rest are lost.** There is no average. A noisy first point
+  stays in the map for the whole run.
+- **Nothing is ever removed.** A person who walks through the scene leaves points that stay in the
+  map. Point-LIO has no loop closing either, so drift is not corrected later.
+- **A pose can be published and not saved.** `on_odometry` ignores the answer of `Trajectory::add`.
+  A pose that is not newer than the last is skipped in the file but still goes to `/map_builder/pose`.
+- **A save is lost if the node is killed.** The map is only in memory. `save_on_exit` works on
+  Ctrl-C. A crash or `kill -9` loses the run, unless `save` was called before.
+- **A scan with another frame is dropped with a warning only.** The warning comes at most every 2 s.
+- **Two nodes starting together.** The check counts publishers after 2 s. From reading the code, not
+  from a test, two nodes that start together could both see two and both stop.
