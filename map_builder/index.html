@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta name="generator" content="Quarkdown">
+    <meta charset="UTF-8">
+    <meta name="description" content="Unitree Go2 mapping and navigation">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="quarkdown:root-path" content="..">
+    <meta name="quarkdown:search-index" content="../search-index.json">
+    <title>Unitree Go2</title>
+    <script src="../script/quarkdown.min.js"></script>
+    <script>const capabilities = window.quarkdownCapabilities</script>
+    <script>window.texMacros = {}</script>
+    <link href="../lib/bootstrap-icons/bootstrap-icons.min.css" rel="stylesheet">
+    <script src="../lib/highlight.js/highlightjs.min.js"></script>
+    <script src="../lib/highlightjs-line-numbers/highlightjs-line-numbers.min.js"></script>
+    <script src="../lib/highlightjs-copy/highlightjs-copy.min.js"></script>
+    <link href="../lib/highlightjs-copy/highlightjs-copy.min.css" rel="stylesheet">
+    <script>capabilities.code = true;</script>
+    <script src="../lib/mermaid/mermaid.min.js"></script>
+    <script>capabilities.mermaid = true;</script>
+    <link href="../theme/theme.css" rel="stylesheet">
+    <style>
+
+</style>
+    <script>prepare(new DocsDocument());</script>
+<template id="sidebar-template"><nav class="sidebar" role="doc-toc"><ol><li data-target-id="mapbuilder" data-depth="1"><a href="#mapbuilder">map_builder</a><ol><li data-target-id="where-it-sits" data-depth="2"><a href="#where-it-sits">Where it sits</a></li><li data-target-id="what-it-does" data-depth="2"><a href="#what-it-does">What it does</a></li><li data-target-id="quick-start" data-depth="2"><a href="#quick-start">Quick start</a></li><li data-target-id="how-it-works" data-depth="2"><a href="#how-it-works">How it works</a><ol><li data-target-id="the-code-in-one-picture" data-depth="3"><a href="#the-code-in-one-picture">The code in one picture</a></li><li data-target-id="start-up" data-depth="3"><a href="#start-up">Start-up</a></li><li data-target-id="a-cloud-message" data-depth="3"><a href="#a-cloud-message">A cloud message</a></li><li data-target-id="the-voxel-map" data-depth="3"><a href="#the-voxel-map">The voxel map</a></li><li data-target-id="an-odometry-message-and-the-three-timers" data-depth="3"><a href="#an-odometry-message-and-the-three-timers">An odometry message and the three timers</a></li><li data-target-id="how-a-viewer-keeps-in-step" data-depth="3"><a href="#how-a-viewer-keeps-in-step">How a viewer keeps in step</a></li><li data-target-id="save" data-depth="3"><a href="#save">Save</a></li><li data-target-id="types" data-depth="3"><a href="#types">Types</a></li></ol></li><li data-target-id="output-files" data-depth="2"><a href="#output-files">Output files</a></li><li data-target-id="parameters" data-depth="2"><a href="#parameters">Parameters</a></li><li data-target-id="topics-and-services" data-depth="2"><a href="#topics-and-services">Topics and services</a></li><li data-target-id="build-and-test" data-depth="2"><a href="#build-and-test">Build and test</a></li><li data-target-id="common-problems" data-depth="2"><a href="#common-problems">Common problems</a></li><li data-target-id="known-gaps" data-depth="2"><a href="#known-gaps">Known gaps</a></li></ol></li></ol></nav>
+</template>  </head>
+  <body class="quarkdown quarkdown-docs">
+    <header>
+      <aside class="margin-area"></aside>
+      <main>
+        <div class="search-wrapper">
+          <div class="search-field"><i class="bi bi-search"></i><input type="text" id="search-input" placeholder="Search" autocomplete="off"><kbd>/</kbd></div>
+        </div>
+      </main>
+      <aside class="margin-area"></aside>
+    </header>
+    <div class="content-wrapper">
+      <aside class="margin-area" id="margin-area-left">
+        <div class="position-top"></div>
+        <div class="position-middle"></div>
+        <div class="position-bottom"></div>
+      </aside>
+      <main><div class="page-margin-content page-margin-top-left" data-on-left-page="top-left" data-on-right-page="top-left"><p><a href="../main"><i class="icon-image bi bi-book" aria-hidden="true"></i> Unitree Go2</a></p></div><div class="page-margin-content page-margin-top-right" data-on-left-page="top-right" data-on-right-page="top-right"><p><a href="https://github.com/unibo-dslab-projects/unitree_go2" title="Source repository"><i class="icon-image bi bi-github" aria-hidden="true"></i></a></p></div><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Patrick+Hand&display=swap">
+<style>
+body.quarkdown.quarkdown-docs > header a:has(> .bi) {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+body.quarkdown.quarkdown-docs > header a > .bi {
+  font-size: 1.3em;
+}
+/* the minimal layout fills the current page link with red */
+body.quarkdown.quarkdown-docs aside nav[data-role=page-list] a[aria-current] {
+  background-color: transparent;
+  color: var(--qd-link-color);
+}
+/* quarkdown gives each sidebar 20vw and the page 45rem; here the sidebars hug
+   their links and the page takes the rest. below 1200px quarkdown stacks them. */
+@media screen and (min-width: 1201px) {
+  body.quarkdown.quarkdown-docs > :is(header, .content-wrapper) > aside {
+    flex: 0 0 auto;
+    width: max-content;
+    max-width: 25vw;
+    margin: 0;
+    padding-left: 40px;
+    padding-right: 40px;
+  }
+  /* quarkdown adds 64px next to each sidebar through :first-child and :last-child */
+  body.quarkdown.quarkdown-docs > :is(header, .content-wrapper) > aside:is(:first-child, :last-child) {
+    margin: 0;
+  }
+  body.quarkdown.quarkdown-docs > :is(header, .content-wrapper) > main {
+    flex: 1 1 auto;
+    min-width: 0;
+    max-width: none;
+    padding: 0 48px;
+    box-sizing: border-box;
+  }
+}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/svg2roughjs@3.2.3/dist/svg2roughjs.umd.min.js"></script>
+<script>
+(function () {
+  var FONT = "Patrick Hand";
+  var ROUGHNESS = 1.8;
+  // types the bundled mermaid draws by hand itself; svg2roughjs redraws the rest
+  var NATIVE = /^(flowchart|class|state|er$|requirement|mindmap|kanban)/;
+  var CONFIG = {
+    startOnLoad: false,
+    look: "handDrawn",
+    handDrawnSeed: 7,
+    theme: "neutral",
+    // svg2roughjs only copies svg text, not html labels
+    htmlLabels: false,
+    flowchart: { htmlLabels: false },
+    // neutral leaves note text white, which svg2roughjs keeps on a white note
+    themeVariables: { fontFamily: '"' + FONT + '", cursive', noteBkgColor: "#fff5ad", noteTextColor: "#333333" }
+  };
+
+  function patch(m) {
+    if (m.__sketch) return;
+    m.__sketch = true;
+    // quarkdown calls initialize with its own options, so ours are merged on top
+    var init = m.initialize.bind(m);
+    m.initialize = function (cfg) { init(Object.assign({}, cfg, CONFIG)); };
+    // mermaid sizes boxes from the font, so it must be loaded first
+    var render = m.render.bind(m);
+    m.render = function () {
+      var args = arguments;
+      return document.fonts.load('16px "' + FONT + '"').catch(function () {})
+        .then(function () { return render.apply(null, args); });
+    };
+    m.initialize({});
+  }
+
+  function sketch(svg) {
+    var type = svg.getAttribute("aria-roledescription") || "";
+    if (NATIVE.test(type) || svg.hasAttribute("data-sketched")) return;
+    svg.setAttribute("data-sketched", "");
+    // svg2roughjs sizes from width/height, and mermaid writes width="100%"
+    var vb = svg.viewBox.baseVal;
+    var width = svg.style.width;
+    svg.setAttribute("width", vb.width);
+    svg.setAttribute("height", vb.height);
+    var host = document.createElement("div");
+    var s = new svg2roughjs.Svg2Roughjs(host, svg2roughjs.OutputType.SVG);
+    s.svg = svg;
+    s.fontFamily = FONT;
+    s.randomize = false;
+    s.roughConfig = { roughness: ROUGHNESS, bowing: 1, fillStyle: "hachure", hachureGap: 6, fillWeight: 0.8, seed: 7 };
+    s.sketch().then(function () {
+      var out = host.querySelector("svg");
+      out.setAttribute("data-sketched", "");
+      svg.replaceWith(out);
+      // mermaid viewBox often starts negative; fit the box to what was drawn
+      var box = out.getBBox();
+      var pad = 6;
+      out.setAttribute("viewBox", (box.x - pad) + " " + (box.y - pad) + " " + (box.width + 2 * pad) + " " + (box.height + 2 * pad));
+      out.removeAttribute("width");
+      out.removeAttribute("height");
+      out.style.width = width || "100%";
+      out.style.maxWidth = "100%";
+    }).catch(function (e) { console.error("mermaid sketch failed", e); });
+  }
+
+  if (window.mermaid) patch(window.mermaid);
+  else document.addEventListener("DOMContentLoaded", function () { if (window.mermaid) patch(window.mermaid); });
+
+  // quarkdown swaps the svg in, sometimes from its sessionStorage cache, so watch for it
+  new MutationObserver(function () {
+    document.querySelectorAll(".mermaid > svg:not([data-sketched])").forEach(sketch);
+  }).observe(document.documentElement, { childList: true, subtree: true });
+})();
+</script><div class="page-margin-content page-margin-bottom-center" data-on-left-page="bottom-center" data-on-right-page="bottom-center"><p>Unitree Go2 · Nicolò Ghignatti</p></div><div class="page-margin-content page-margin-left-top" data-on-left-page="left-top" data-on-right-page="left-top"><nav role="navigation" data-role="page-list"><h3 id="overview" data-decorative="">Overview</h3><ul><li><a href="../main">Home</a></li></ul><h3 id="packages" data-decorative="">Packages</h3><ul><li><a href="../go2_calibration">go2_calibration</a></li><li><a href="../go2_preprocessor">go2_preprocessor</a></li><li><a href="../go2_mapping_bringup">go2_mapping_bringup</a></li><li><a href="../map_builder" aria-current="page">map_builder</a></li></ul></nav></div><div class="page-margin-content page-margin-right-top" data-on-left-page="right-top" data-on-right-page="right-top"><h3 id="table-of-contents">On this page</h3><nav role="table-of-contents" data-role="table-of-contents"><ol><li data-target-id="mapbuilder" data-depth="1"><a href="#mapbuilder">map_builder</a><ol><li data-target-id="where-it-sits" data-depth="2"><a href="#where-it-sits">Where it sits</a></li><li data-target-id="what-it-does" data-depth="2"><a href="#what-it-does">What it does</a></li><li data-target-id="quick-start" data-depth="2"><a href="#quick-start">Quick start</a></li><li data-target-id="how-it-works" data-depth="2"><a href="#how-it-works">How it works</a><ol><li data-target-id="the-code-in-one-picture" data-depth="3"><a href="#the-code-in-one-picture">The code in one picture</a></li><li data-target-id="start-up" data-depth="3"><a href="#start-up">Start-up</a></li><li data-target-id="a-cloud-message" data-depth="3"><a href="#a-cloud-message">A cloud message</a></li><li data-target-id="the-voxel-map" data-depth="3"><a href="#the-voxel-map">The voxel map</a></li><li data-target-id="an-odometry-message-and-the-three-timers" data-depth="3"><a href="#an-odometry-message-and-the-three-timers">An odometry message and the three timers</a></li><li data-target-id="how-a-viewer-keeps-in-step" data-depth="3"><a href="#how-a-viewer-keeps-in-step">How a viewer keeps in step</a></li><li data-target-id="save" data-depth="3"><a href="#save">Save</a></li><li data-target-id="types" data-depth="3"><a href="#types">Types</a></li></ol></li><li data-target-id="output-files" data-depth="2"><a href="#output-files">Output files</a></li><li data-target-id="parameters" data-depth="2"><a href="#parameters">Parameters</a></li><li data-target-id="topics-and-services" data-depth="2"><a href="#topics-and-services">Topics and services</a></li><li data-target-id="build-and-test" data-depth="2"><a href="#build-and-test">Build and test</a></li><li data-target-id="common-problems" data-depth="2"><a href="#common-problems">Common problems</a></li><li data-target-id="known-gaps" data-depth="2"><a href="#known-gaps">Known gaps</a></li></ol></li></ol></nav></div><h1 id="unitree-go2" data-decorative="">Unitree Go2</h1><h1 class="page-break" id="mapbuilder">map_builder</h1><p><span class="codespan-content"><code>map_builder</code></span> collects Point-LIO&rsquo;s output into one map and one path, and saves both to disk.</p><p><strong>What.</strong> One ROS 2 node (<span class="codespan-content"><code>ros2 run map_builder map_builder</code></span>). It listens to the scans and the poses that Point-LIO publishes. It keeps the scans in a <strong>voxel map</strong>: space is cut into small cubes, and each cube holds one point. It also keeps every pose, in a list. It publishes the new cubes while you map, and on Ctrl-C it writes <span class="codespan-content"><code>map.pcd</code></span> and <span class="codespan-content"><code>trajectory.tum</code></span>.</p><p><strong>Why.</strong> Point-LIO sends the same wall again with every scan, about 10 times a second. Saved as they come, the points would pile up and the file would be huge. Point-LIO also does not save anything by default. <span class="codespan-content"><code>map_builder</code></span> removes the repeats and keeps the result, so a walk ends with two small files that the rest of the thesis can use.</p><p><strong>When.</strong> Every time you map. <span class="codespan-content"><code>mapping.launch.py</code></span> starts it, on the robot or on the laptop.</p><h2 id="where-it-sits">Where it sits</h2><figure><pre class="mermaid">flowchart TB
+  lio[Point-LIO] --&gt;|&quot;/cloud_registered&quot;| mb[map_builder]
+  lio --&gt;|&quot;/aft_mapped_to_init&quot;| mb
+  cfg[(&quot;map_builder.yaml&quot;)] --&gt; mb
+  mb --&gt;|&quot;/map_builder/delta&quot;| viewer[&quot;viewer, later&quot;]
+  mb --&gt;|&quot;/map_builder/pose&quot;| viewer
+  mb --&gt;|&quot;/map_builder/get_map&quot;| viewer
+  mb --&gt;|&quot;Ctrl-C or save&quot;| disk[(&quot;map.pcd and trajectory.tum&quot;)]</pre></figure><p>The inputs are called <span class="codespan-content"><code>cloud</code></span> and <span class="codespan-content"><code>odom</code></span> inside the node. <a href="../go2_mapping_bringup">go2_mapping_bringup</a> points them at Point-LIO&rsquo;s two topics. The frame of the scans is <span class="codespan-content"><code>camera_init</code></span>, Point-LIO&rsquo;s world frame: the origin is where the robot stood at the start, and x points where it looked.</p><h2 id="what-it-does">What it does</h2><table><thead><tr><th>Data</th><th>What the node does</th></tr></thead><tbody><tr><td>Each scan</td><td>Puts every point in a cube. A cube that is already full ignores the new point</td></tr><tr><td>Each pose</td><td>Appends it to the path. A pose that is not newer than the last one is skipped</td></tr><tr><td>New cubes</td><td>Sends them as a <strong>delta</strong> twice a second</td></tr><tr><td>The whole map</td><td>On request: a service answers with every point. Or on a topic, if you turn it on</td></tr><tr><td>On save</td><td>Writes the map as a PCD file and the path as a TUM file</td></tr></tbody></table><h2 id="quick-start">Quick start</h2><p>With the whole chain, which is the normal way:</p><pre><code class="language-bash">tools/mapping/map.sh</code></pre><p>The node alone, if Point-LIO runs elsewhere:</p><pre><code class="language-bash">ros2 run map_builder map_builder --ros-args \
+    --params-file src/go2_mapping_bringup/config/map_builder.yaml \
+    -p output_dir:=$HOME/maps \
+    -r cloud:=/cloud_registered -r odom:=/aft_mapped_to_init</code></pre><p>Save in the middle of a run, without stopping:</p><pre><code class="language-bash">ros2 service call /map_builder/save std_srvs/srv/Trigger</code></pre><p>The answer holds the folder name. A run is written to <span class="codespan-content"><code>&lt;output_dir&gt;/&lt;time of the first scan, UTC&gt;/</code></span>, for example <span class="codespan-content"><code>~/maps/2026-10-19T14:35:23/</code></span>.</p><h2 id="how-it-works">How it works</h2><h3 id="the-code-in-one-picture">The code in one picture</h3><p>The code is split in three parts, so that the maths does not need ROS and a test does not need PCL. An arrow means &ldquo;uses&rdquo;.</p><figure><pre class="mermaid">flowchart TB
+  subgraph CORE[&quot;map_builder_core: plain C++&quot;]
+    vm[&quot;voxel_map: VoxelMap, Point&quot;]
+    tr[&quot;trajectory: Trajectory, Pose&quot;]
+  end
+  subgraph IO[&quot;map_builder_io: needs PCL&quot;]
+    mio[&quot;map_io: make_run_folder, save_pcd, save_tum&quot;]
+  end
+  subgraph EXE[&quot;executable map_builder: needs ROS&quot;]
+    main[&quot;main: spin, then save_at_exit&quot;]
+    node[&quot;node: MapBuilderNode&quot;]
+    cm[&quot;cloud_msg: from_message, to_message&quot;]
+  end
+  tool[&quot;voxel_count: offline check&quot;]
+  main --&gt; node
+  node --&gt; cm
+  node --&gt; mio
+  node --&gt; vm
+  node --&gt; tr
+  cm --&gt; vm
+  mio --&gt; vm
+  mio --&gt; tr
+  tool --&gt; vm</pre></figure><p><span class="codespan-content"><code>voxel_count</code></span> is a small program with no ROS. It loads a PCD file and puts it in a voxel map twice. The second time nothing must be added: it proves that no two saved points share a cube.</p><h3 id="start-up">Start-up</h3><p>All the parameters are read-only: a later <span class="codespan-content"><code>ros2 param set</code></span> fails with an error.</p><figure><pre class="mermaid">sequenceDiagram
+  participant R as ROS parameters
+  participant N as MapBuilderNode
+  participant T as startup timer
+  participant D as DDS graph
+  N-&gt;&gt;R: declare voxel_size, three rates, output_dir, save_on_exit
+  N-&gt;&gt;N: a rate of 0 or less is an error, except full_map_rate_hz
+  N-&gt;&gt;N: draw run_id, a random number
+  N-&gt;&gt;N: 2 subscriptions, 3 publishers, 2 services, 2 timers
+  N-&gt;&gt;N: full_map_rate_hz above 0: also a publisher and a timer
+  N-&gt;&gt;N: log voxel size, rates, run_id and output_dir
+  T-&gt;&gt;N: after 2 s, check_single_instance
+  N-&gt;&gt;D: how many publishers on /map_builder/delta
+  D--&gt;&gt;N: 2 or more means another map_builder runs
+  N-&gt;&gt;N: stop with a FATAL message</pre></figure><p>The <span class="codespan-content"><code>run_id</code></span> tells a viewer that a new map has begun. The check after 2 s is there because two <span class="codespan-content"><code>map_builder</code></span>s on the same topics would send two different maps, and a viewer cannot tell them apart.</p><h3 id="a-cloud-message">A cloud message</h3><figure><pre class="mermaid">sequenceDiagram
+  participant P as Point-LIO
+  participant N as on_cloud
+  participant C as cloud_msg
+  participant V as VoxelMap
+  P-&gt;&gt;N: /cloud_registered
+  N-&gt;&gt;C: from_message(message)
+  C--&gt;&gt;N: list of Point x y z intensity
+  N-&gt;&gt;N: first scan: keep frame_id and the stamp
+  N-&gt;&gt;N: later scan with another frame_id: warn and drop it
+  N-&gt;&gt;V: insert(points)
+  V--&gt;&gt;N: how many points were new
+  N-&gt;&gt;N: remember the stamp of this scan</pre></figure><p>A cloud that cannot be read (its data is shorter than <span class="codespan-content"><code>width * height * point_step</code></span>, or a field is missing) is logged and skipped. The first scan fixes the map frame and the name of the save folder. Every log line &ldquo;Voxels N, added M points from cloud&rdquo; comes at most every 2 s.</p><h3 id="the-voxel-map">The voxel map</h3><p><span class="codespan-content"><code>VoxelMap::insert</code></span> does this for every point. A point that is not a number (NaN or infinity) is skipped.</p><figure><pre class="mermaid">flowchart TD
+  p[&quot;a point x, y, z&quot;] --&gt; f{&quot;finite?&quot;}
+  f --&gt;|no| skip([&quot;skip&quot;])
+  f --&gt;|yes| k[&quot;key = floor of x, y, z divided by voxel_size&quot;]
+  k --&gt; e{&quot;key already in the map?&quot;}
+  e --&gt;|yes| ig([&quot;ignore the point&quot;])
+  e --&gt;|no| add[&quot;store the point under the key&quot;]
+  add --&gt; pend[&quot;also append it to the pending list&quot;]</pre></figure><p><span class="codespan-content"><code>floor</code></span>, not a plain cast, because a cast rounds towards 0 and puts -0.03 and +0.03 in the same cube. The map is a hash map (<span class="codespan-content"><code>unordered_map</code></span>) with the key hashed from three large primes, a method called spatial hashing.</p><p><strong>Example.</strong> The numbers are made up. The voxel size is 0.05 m.</p><table><thead><tr><th>Point (x, y, z)</th><th>x, y, z divided by 0.05</th><th>Key</th><th>Result</th></tr></thead><tbody><tr><td>(1.23, -0.03, 0.51)</td><td>24.6, -0.6, 10.2</td><td>(24, -1, 10)</td><td>new, stored</td></tr><tr><td>(1.24, -0.04, 0.52)</td><td>24.8, -0.8, 10.4</td><td>(24, -1, 10)</td><td>same cube, ignored</td></tr><tr><td>(1.26, -0.03, 0.51)</td><td>25.2, -0.6, 10.2</td><td>(25, -1, 10)</td><td>new, stored</td></tr></tbody></table><p>The first point of a cube wins. It is not averaged with the later ones.</p><p><strong>Real numbers.</strong> On the straight walk <span class="codespan-content"><code>2026-10-19_line_01</code></span> (5.4 m), voxel 0.05 m gives about 44,700 points. Voxel 0.10 m gave 14,476 points on the same walk, and 0.05 m gave 45,195 on an earlier run.</p><h3 id="an-odometry-message-and-the-three-timers">An odometry message and the three timers</h3><p>Nothing is sent from the callbacks. They only store. Three timers send what was stored.</p><figure><pre class="mermaid">sequenceDiagram
+  participant P as Point-LIO
+  participant N as MapBuilderNode
+  participant S as Trajectory
+  participant V as VoxelMap
+  participant W as viewer
+  P-&gt;&gt;N: /aft_mapped_to_init
+  N-&gt;&gt;S: add(pose)
+  S--&gt;&gt;N: false, if the stamp is not newer than the last one
+  N-&gt;&gt;N: keep it as the latest pose, not yet published
+  Note over N: every 0.1 s, pose timer
+  N-&gt;&gt;W: /map_builder/pose, if there is a new one
+  Note over N: every 0.5 s, delta timer
+  N-&gt;&gt;V: last_voxel_points_added
+  V--&gt;&gt;N: the pending points, and the list is emptied
+  N-&gt;&gt;W: /map_builder/delta with run_id and seq</pre></figure><p>The delta holds <strong>only the new cubes</strong>, one point each, so it stays small. <span class="codespan-content"><code>seq</code></span> counts 1, 2, 3 and so on inside one run. <span class="codespan-content"><code>stamp</code></span> is the newest scan inside the delta. A delta with no new points is not sent, so a still robot sends nothing.</p><h3 id="how-a-viewer-keeps-in-step">How a viewer keeps in step</h3><p>A viewer can join late or miss a message. The rules are in the message files <span class="codespan-content"><code>MapDelta.msg</code></span> and <span class="codespan-content"><code>GetMap.srv</code></span>.</p><figure><pre class="mermaid">sequenceDiagram
+  participant W as viewer
+  participant N as map_builder
+  W-&gt;&gt;N: get_map
+  N-&gt;&gt;N: send the pending points as a delta first
+  N--&gt;&gt;W: run_id 7, seq 12, all points
+  N-&gt;&gt;W: delta seq 11
+  W-&gt;&gt;W: seq 11 is not above 12: ignore
+  N-&gt;&gt;W: delta seq 13
+  W-&gt;&gt;W: add the points
+  N-&gt;&gt;W: delta seq 15
+  W-&gt;&gt;W: 14 is missing: call get_map again
+  N-&gt;&gt;W: delta with another run_id
+  W-&gt;&gt;W: new map: throw away mine, call get_map</pre></figure><p><span class="codespan-content"><code>get_map</code></span> first sends the pending points as a delta. This way the snapshot matches <span class="codespan-content"><code>seq</code></span> exactly, and the viewer never has a hole between the snapshot and the next delta.</p><h3 id="save">Save</h3><figure><pre class="mermaid">sequenceDiagram
+  participant U as you
+  participant S as save service
+  participant N as MapBuilderNode
+  participant M as map_io
+  participant X as main
+  U-&gt;&gt;S: call save
+  S-&gt;&gt;N: on_save
+  N-&gt;&gt;M: make_run_folder(output_dir, time of the first scan)
+  M--&gt;&gt;N: a new folder, with _1, _2 if the name exists
+  N-&gt;&gt;M: save_pcd(folder, all points)
+  N-&gt;&gt;M: save_tum(folder, trajectory)
+  N--&gt;&gt;U: success and the folder name
+  U-&gt;&gt;X: Ctrl-C
+  X-&gt;&gt;X: spin returns
+  X-&gt;&gt;N: save_at_exit
+  N-&gt;&gt;M: the same three calls, if save_on_exit is true</pre></figure><p>Saving twice in one run gives two folders, <span class="codespan-content"><code>&lt;time&gt;</code></span> and <span class="codespan-content"><code>&lt;time&gt;_1</code></span>. Save fails with <span class="codespan-content"><code>map is empty</code></span> if no scan came, and with <span class="codespan-content"><code>output_dir is not set</code></span> if the node has no output folder. A failed save at exit is logged and does not crash the node.</p><h3 id="types">Types</h3><figure><pre class="mermaid">classDiagram
+  class MapBuilderNode
+  class VoxelMap
+  class Trajectory
+  class Point
+  class VoxelKey
+  class Pose
+  MapBuilderNode *-- VoxelMap : map_
+  MapBuilderNode *-- Trajectory : trajectory_
+  VoxelMap *-- VoxelKey : many, one per cube
+  VoxelMap *-- Point : one per key
+  Trajectory *-- Pose : poses_</pre></figure><table><thead><tr><th>File</th><th>Does</th></tr></thead><tbody><tr><td><span class="codespan-content"><code>main</code></span></td><td>Starts the node, spins, then calls <span class="codespan-content"><code>save_at_exit</code></span></td></tr><tr><td><span class="codespan-content"><code>node</code></span></td><td>The two callbacks, the timers, the services, the single-instance check</td></tr><tr><td><span class="codespan-content"><code>cloud_msg</code></span></td><td><span class="codespan-content"><code>PointCloud2</code></span> message to a list of <span class="codespan-content"><code>Point</code></span> and back</td></tr><tr><td><span class="codespan-content"><code>voxel_map</code></span></td><td><span class="codespan-content"><code>Point</code></span>, <span class="codespan-content"><code>VoxelKey</code></span>, the hash, and <span class="codespan-content"><code>VoxelMap</code></span> with <span class="codespan-content"><code>insert</code></span>, <span class="codespan-content"><code>last_voxel_points_added</code></span>, <span class="codespan-content"><code>all</code></span></td></tr><tr><td><span class="codespan-content"><code>trajectory</code></span></td><td><span class="codespan-content"><code>Pose</code></span>, and <span class="codespan-content"><code>Trajectory</code></span> with <span class="codespan-content"><code>add</code></span> and <span class="codespan-content"><code>write_tum</code></span></td></tr><tr><td><span class="codespan-content"><code>map_io</code></span></td><td>The run folder name, the PCD writer, the TUM writer</td></tr><tr><td><span class="codespan-content"><code>voxel_count</code></span></td><td>Offline check of a PCD file, not part of the node</td></tr></tbody></table><p>The message types are in the small package <span class="codespan-content"><code>go2_mapping_msgs</code></span>: <span class="codespan-content"><code>MapDelta.msg</code></span> (header, <span class="codespan-content"><code>run_id</code></span>, <span class="codespan-content"><code>seq</code></span>, a <span class="codespan-content"><code>PointCloud2</code></span> of the new points) and <span class="codespan-content"><code>GetMap.srv</code></span> (no request, answers with <span class="codespan-content"><code>run_id</code></span>, <span class="codespan-content"><code>seq</code></span> and a <span class="codespan-content"><code>PointCloud2</code></span> of all points).</p><h2 id="output-files">Output files</h2><p><span class="codespan-content"><code>map.pcd</code></span> has one point per cube, binary, fields <span class="codespan-content"><code>x y z intensity</code></span>, in metres, frame <span class="codespan-content"><code>camera_init</code></span>.</p><p><span class="codespan-content"><code>trajectory.tum</code></span> has one line per pose: <span class="codespan-content"><code>stamp x y z qx qy qz qw</code></span>. The stamp is in seconds with 9 digits after the dot. Example line, made up:</p><pre><code>1760884523.123456789 1.204300 -0.031200 0.002100 0.000100 -0.002300 0.014000 0.999900</code></pre><p>The path starts at (0, 0, 0). For a walk that ends on its start mark, the distance of the last pose from the origin is the drift of Point-LIO.</p><h2 id="parameters">Parameters</h2><p>All are read-only, read once at start-up.</p><table><thead><tr><th>Parameter</th><th>Default</th><th>In <span class="codespan-content"><code>map_builder.yaml</code></span></th><th>Meaning</th></tr></thead><tbody><tr><td><span class="codespan-content"><code>voxel_size</code></span></td><td>0.05</td><td>0.05</td><td>m. Side of a cube. Must be above 0</td></tr><tr><td><span class="codespan-content"><code>delta_rate_hz</code></span></td><td>2.0</td><td>2.0</td><td>How often the new cubes are sent. Above 0</td></tr><tr><td><span class="codespan-content"><code>pose_rate_hz</code></span></td><td>10.0</td><td>10.0</td><td>How often the pose is sent. Above 0</td></tr><tr><td><span class="codespan-content"><code>full_map_rate_hz</code></span></td><td>0.0</td><td>0.0</td><td>The whole map on a topic. 0 is off</td></tr><tr><td><span class="codespan-content"><code>output_dir</code></span></td><td>empty</td><td>set by the launch file</td><td>Folder for the runs. Empty makes save fail</td></tr><tr><td><span class="codespan-content"><code>save_on_exit</code></span></td><td>false</td><td>true</td><td>Save when you press Ctrl-C</td></tr></tbody></table><h2 id="topics-and-services">Topics and services</h2><table><thead><tr><th>Direction</th><th>Name</th><th>Type</th><th>QoS</th></tr></thead><tbody><tr><td>in</td><td><span class="codespan-content"><code>cloud</code></span></td><td><span class="codespan-content"><code>sensor_msgs/PointCloud2</code></span></td><td>reliable, queue 100</td></tr><tr><td>in</td><td><span class="codespan-content"><code>odom</code></span></td><td><span class="codespan-content"><code>nav_msgs/Odometry</code></span></td><td>reliable, queue 100</td></tr><tr><td>out</td><td><span class="codespan-content"><code>/map_builder/delta</code></span></td><td><span class="codespan-content"><code>go2_mapping_msgs/MapDelta</code></span></td><td>reliable, queue 25</td></tr><tr><td>out</td><td><span class="codespan-content"><code>/map_builder/pose</code></span></td><td><span class="codespan-content"><code>geometry_msgs/PoseStamped</code></span></td><td>reliable, queue 1</td></tr><tr><td>out</td><td><span class="codespan-content"><code>/map_builder/full_map</code></span></td><td><span class="codespan-content"><code>sensor_msgs/PointCloud2</code></span></td><td>reliable, transient local, queue 1. Only if the rate is above 0</td></tr><tr><td>service</td><td><span class="codespan-content"><code>/map_builder/get_map</code></span></td><td><span class="codespan-content"><code>go2_mapping_msgs/GetMap</code></span></td><td></td></tr><tr><td>service</td><td><span class="codespan-content"><code>/map_builder/save</code></span></td><td><span class="codespan-content"><code>std_srvs/Trigger</code></span></td><td></td></tr></tbody></table><p>Transient local means a viewer that connects late still gets the last map. Turn <span class="codespan-content"><code>full_map_rate_hz</code></span> on only to look at the map in RViz: every message holds the whole map.</p><h2 id="build-and-test">Build and test</h2><pre><code class="language-bash">cd ~/unitree_go2
+source ~/unitree_ros2/setup.sh
+vcs import src &lt; go2.repos
+colcon build --packages-up-to map_builder</code></pre><p>It needs PCL (the point cloud library) for the PCD file. The package has no unit tests yet. It was checked by replaying a bag through the whole chain on the laptop. The steps are in <span class="codespan-content"><code>src/map_builder/README.md</code></span>. A correct run of <span class="codespan-content"><code>2026-10-19_line_01</code></span> at <span class="codespan-content"><code>-r 0.25</code></span> gives:</p><table><thead><tr><th>Check</th><th>Real result</th></tr></thead><tbody><tr><td>Points in <span class="codespan-content"><code>map.pcd</code></span></td><td>44,641 and 44,729 in two runs</td></tr><tr><td>Lines in <span class="codespan-content"><code>trajectory.tum</code></span></td><td>297</td></tr><tr><td>x of the last pose</td><td>5.33 to 5.35 m, the tape says 5.40 m</td></tr><tr><td><span class="codespan-content"><code>ros2 run map_builder voxel_count &lt;map.pcd&gt; 0.05</code></span></td><td><span class="codespan-content"><code>second inserted: 0</code></span></td></tr><tr><td>Last <span class="codespan-content"><code>seq</code></span></td><td>about 150, depends on timing</td></tr></tbody></table><p>If the map has about 18,700 points and the end is at x 7.36 m, Point-LIO ran with the old 0.5 m filter size. Check <span class="codespan-content"><code>filter_size_surf</code></span> and <span class="codespan-content"><code>filter_size_map</code></span> in <span class="codespan-content"><code>point_lio.yaml</code></span>.</p><h2 id="common-problems">Common problems</h2><table><thead><tr><th>Symptom</th><th>Cause</th><th>Fix</th></tr></thead><tbody><tr><td><span class="codespan-content"><code>another map builder is running</code></span>, then the node stops</td><td>An old <span class="codespan-content"><code>map_builder</code></span> is still alive</td><td><span class="codespan-content"><code>pgrep -af map_builder</code></span>, stop it, start again</td></tr><tr><td><span class="codespan-content"><code>save</code></span> answers <span class="codespan-content"><code>map is empty</code></span></td><td>No scan arrived</td><td>Check <span class="codespan-content"><code>ros2 topic hz /cloud_registered</code></span></td></tr><tr><td><span class="codespan-content"><code>Frame ID mismatch: expected camera_init</code></span></td><td>Something else publishes on <span class="codespan-content"><code>/cloud_registered</code></span></td><td><span class="codespan-content"><code>ros2 topic info -v /cloud_registered</code></span></td></tr></tbody></table><h2 id="known-gaps">Known gaps</h2><ul><li><strong>No unit tests.</strong> <span class="codespan-content"><code>VoxelMap</code></span>, <span class="codespan-content"><code>Trajectory</code></span> and <span class="codespan-content"><code>map_io</code></span> are plain C++ and easy to test. The CMake file has the lines ready but commented out. The only checks are the bag replay and <span class="codespan-content"><code>voxel_count</code></span>.</li><li><strong>The first point of a cube stays, the rest are lost.</strong> There is no average. A noisy first point stays in the map for the whole run.</li><li><strong>Nothing is ever removed.</strong> A person who walks through the scene leaves points that stay in the map. Point-LIO has no loop closing either, so drift is not corrected later.</li><li><strong>A pose can be published and not saved.</strong> <span class="codespan-content"><code>on_odometry</code></span> ignores the answer of <span class="codespan-content"><code>Trajectory::add</code></span>. A pose that is not newer than the last is skipped in the file but still goes to <span class="codespan-content"><code>/map_builder/pose</code></span>.</li><li><strong>A save is lost if the node is killed.</strong> The map is only in memory. <span class="codespan-content"><code>save_on_exit</code></span> works on Ctrl-C. A crash or <span class="codespan-content"><code>kill -9</code></span> loses the run, unless <span class="codespan-content"><code>save</code></span> was called before.</li><li><strong>A scan with another frame is dropped with a warning only.</strong> The warning comes at most every 2 s.</li><li><strong>Two nodes starting together.</strong> The check counts publishers after 2 s. From reading the code, not from a test, two nodes that start together could both see two and both stop.</li></ul>
+        <div id="footnote-area">
+          <div class="footnote-rule"></div>
+        </div>
+        <div id="sibling-pages-button-area"></div>
+        <footer>
+          <div class="position-left"></div>
+          <div class="position-center"></div>
+          <div class="position-right"></div>
+        </footer>
+      </main>
+      <aside class="margin-area" id="margin-area-right">
+        <div class="position-top"></div>
+        <div class="position-middle"></div>
+        <div class="position-bottom"></div>
+      </aside>
+    </div>
+  </body>
+</html>

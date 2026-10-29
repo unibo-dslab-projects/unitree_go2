@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta name="generator" content="Quarkdown">
+    <meta charset="UTF-8">
+    <meta name="description" content="Unitree Go2 mapping and navigation">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="quarkdown:root-path" content="..">
+    <meta name="quarkdown:search-index" content="../search-index.json">
+    <title>Unitree Go2</title>
+    <script src="../script/quarkdown.min.js"></script>
+    <script>const capabilities = window.quarkdownCapabilities</script>
+    <script>window.texMacros = {}</script>
+    <link href="../lib/bootstrap-icons/bootstrap-icons.min.css" rel="stylesheet">
+    <script src="../lib/highlight.js/highlightjs.min.js"></script>
+    <script src="../lib/highlightjs-line-numbers/highlightjs-line-numbers.min.js"></script>
+    <script src="../lib/highlightjs-copy/highlightjs-copy.min.js"></script>
+    <link href="../lib/highlightjs-copy/highlightjs-copy.min.css" rel="stylesheet">
+    <script>capabilities.code = true;</script>
+    <script src="../lib/mermaid/mermaid.min.js"></script>
+    <script>capabilities.mermaid = true;</script>
+    <link href="../theme/theme.css" rel="stylesheet">
+    <style>
+
+</style>
+    <script>prepare(new DocsDocument());</script>
+<template id="sidebar-template"><nav class="sidebar" role="doc-toc"><ol><li data-target-id="go2calibration" data-depth="1"><a href="#go2calibration">go2_calibration</a><ol><li data-target-id="where-it-sits" data-depth="2"><a href="#where-it-sits">Where it sits</a></li><li data-target-id="what-it-measures" data-depth="2"><a href="#what-it-measures">What it measures</a></li><li data-target-id="quick-start" data-depth="2"><a href="#quick-start">Quick start</a></li><li data-target-id="how-it-works" data-depth="2"><a href="#how-it-works">How it works</a><ol><li data-target-id="the-code-in-one-picture" data-depth="3"><a href="#the-code-in-one-picture">The code in one picture</a></li><li data-target-id="a-live-run-step-by-step" data-depth="3"><a href="#a-live-run-step-by-step">A live run, step by step</a></li><li data-target-id="the-motion" data-depth="3"><a href="#the-motion">The motion</a></li><li data-target-id="the-live-source-and-its-safety" data-depth="3"><a href="#the-live-source-and-its-safety">The live source and its safety</a></li><li data-target-id="the-bag-source" data-depth="3"><a href="#the-bag-source">The bag source</a></li><li data-target-id="the-buffer" data-depth="3"><a href="#the-buffer">The buffer</a></li><li data-target-id="the-calibration" data-depth="3"><a href="#the-calibration">The calibration</a></li><li data-target-id="the-report-and-the-file" data-depth="3"><a href="#the-report-and-the-file">The report and the file</a></li></ol></li><li data-target-id="types-and-files" data-depth="2"><a href="#types-and-files">Types and files</a></li><li data-target-id="parameters" data-depth="2"><a href="#parameters">Parameters</a></li><li data-target-id="output" data-depth="2"><a href="#output">Output</a></li><li data-target-id="build-and-test" data-depth="2"><a href="#build-and-test">Build and test</a></li><li data-target-id="results-on-our-go2" data-depth="2"><a href="#results-on-our-go2">Results on our Go2</a></li><li data-target-id="known-gaps" data-depth="2"><a href="#known-gaps">Known gaps</a></li></ol></li></ol></nav>
+</template>  </head>
+  <body class="quarkdown quarkdown-docs">
+    <header>
+      <aside class="margin-area"></aside>
+      <main>
+        <div class="search-wrapper">
+          <div class="search-field"><i class="bi bi-search"></i><input type="text" id="search-input" placeholder="Search" autocomplete="off"><kbd>/</kbd></div>
+        </div>
+      </main>
+      <aside class="margin-area"></aside>
+    </header>
+    <div class="content-wrapper">
+      <aside class="margin-area" id="margin-area-left">
+        <div class="position-top"></div>
+        <div class="position-middle"></div>
+        <div class="position-bottom"></div>
+      </aside>
+      <main><div class="page-margin-content page-margin-top-left" data-on-left-page="top-left" data-on-right-page="top-left"><p><a href="../main"><i class="icon-image bi bi-book" aria-hidden="true"></i> Unitree Go2</a></p></div><div class="page-margin-content page-margin-top-right" data-on-left-page="top-right" data-on-right-page="top-right"><p><a href="https://github.com/unibo-dslab-projects/unitree_go2" title="Source repository"><i class="icon-image bi bi-github" aria-hidden="true"></i></a></p></div><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Patrick+Hand&display=swap">
+<style>
+body.quarkdown.quarkdown-docs > header a:has(> .bi) {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+body.quarkdown.quarkdown-docs > header a > .bi {
+  font-size: 1.3em;
+}
+/* the minimal layout fills the current page link with red */
+body.quarkdown.quarkdown-docs aside nav[data-role=page-list] a[aria-current] {
+  background-color: transparent;
+  color: var(--qd-link-color);
+}
+/* quarkdown gives each sidebar 20vw and the page 45rem; here the sidebars hug
+   their links and the page takes the rest. below 1200px quarkdown stacks them. */
+@media screen and (min-width: 1201px) {
+  body.quarkdown.quarkdown-docs > :is(header, .content-wrapper) > aside {
+    flex: 0 0 auto;
+    width: max-content;
+    max-width: 25vw;
+    margin: 0;
+    padding-left: 40px;
+    padding-right: 40px;
+  }
+  /* quarkdown adds 64px next to each sidebar through :first-child and :last-child */
+  body.quarkdown.quarkdown-docs > :is(header, .content-wrapper) > aside:is(:first-child, :last-child) {
+    margin: 0;
+  }
+  body.quarkdown.quarkdown-docs > :is(header, .content-wrapper) > main {
+    flex: 1 1 auto;
+    min-width: 0;
+    max-width: none;
+    padding: 0 48px;
+    box-sizing: border-box;
+  }
+}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/svg2roughjs@3.2.3/dist/svg2roughjs.umd.min.js"></script>
+<script>
+(function () {
+  var FONT = "Patrick Hand";
+  var ROUGHNESS = 1.8;
+  // types the bundled mermaid draws by hand itself; svg2roughjs redraws the rest
+  var NATIVE = /^(flowchart|class|state|er$|requirement|mindmap|kanban)/;
+  var CONFIG = {
+    startOnLoad: false,
+    look: "handDrawn",
+    handDrawnSeed: 7,
+    theme: "neutral",
+    // svg2roughjs only copies svg text, not html labels
+    htmlLabels: false,
+    flowchart: { htmlLabels: false },
+    // neutral leaves note text white, which svg2roughjs keeps on a white note
+    themeVariables: { fontFamily: '"' + FONT + '", cursive', noteBkgColor: "#fff5ad", noteTextColor: "#333333" }
+  };
+
+  function patch(m) {
+    if (m.__sketch) return;
+    m.__sketch = true;
+    // quarkdown calls initialize with its own options, so ours are merged on top
+    var init = m.initialize.bind(m);
+    m.initialize = function (cfg) { init(Object.assign({}, cfg, CONFIG)); };
+    // mermaid sizes boxes from the font, so it must be loaded first
+    var render = m.render.bind(m);
+    m.render = function () {
+      var args = arguments;
+      return document.fonts.load('16px "' + FONT + '"').catch(function () {})
+        .then(function () { return render.apply(null, args); });
+    };
+    m.initialize({});
+  }
+
+  function sketch(svg) {
+    var type = svg.getAttribute("aria-roledescription") || "";
+    if (NATIVE.test(type) || svg.hasAttribute("data-sketched")) return;
+    svg.setAttribute("data-sketched", "");
+    // svg2roughjs sizes from width/height, and mermaid writes width="100%"
+    var vb = svg.viewBox.baseVal;
+    var width = svg.style.width;
+    svg.setAttribute("width", vb.width);
+    svg.setAttribute("height", vb.height);
+    var host = document.createElement("div");
+    var s = new svg2roughjs.Svg2Roughjs(host, svg2roughjs.OutputType.SVG);
+    s.svg = svg;
+    s.fontFamily = FONT;
+    s.randomize = false;
+    s.roughConfig = { roughness: ROUGHNESS, bowing: 1, fillStyle: "hachure", hachureGap: 6, fillWeight: 0.8, seed: 7 };
+    s.sketch().then(function () {
+      var out = host.querySelector("svg");
+      out.setAttribute("data-sketched", "");
+      svg.replaceWith(out);
+      // mermaid viewBox often starts negative; fit the box to what was drawn
+      var box = out.getBBox();
+      var pad = 6;
+      out.setAttribute("viewBox", (box.x - pad) + " " + (box.y - pad) + " " + (box.width + 2 * pad) + " " + (box.height + 2 * pad));
+      out.removeAttribute("width");
+      out.removeAttribute("height");
+      out.style.width = width || "100%";
+      out.style.maxWidth = "100%";
+    }).catch(function (e) { console.error("mermaid sketch failed", e); });
+  }
+
+  if (window.mermaid) patch(window.mermaid);
+  else document.addEventListener("DOMContentLoaded", function () { if (window.mermaid) patch(window.mermaid); });
+
+  // quarkdown swaps the svg in, sometimes from its sessionStorage cache, so watch for it
+  new MutationObserver(function () {
+    document.querySelectorAll(".mermaid > svg:not([data-sketched])").forEach(sketch);
+  }).observe(document.documentElement, { childList: true, subtree: true });
+})();
+</script><div class="page-margin-content page-margin-bottom-center" data-on-left-page="bottom-center" data-on-right-page="bottom-center"><p>Unitree Go2 · Nicolò Ghignatti</p></div><div class="page-margin-content page-margin-left-top" data-on-left-page="left-top" data-on-right-page="left-top"><nav role="navigation" data-role="page-list"><h3 id="overview" data-decorative="">Overview</h3><ul><li><a href="../main">Home</a></li></ul><h3 id="packages" data-decorative="">Packages</h3><ul><li><a href="../go2_calibration" aria-current="page">go2_calibration</a></li><li><a href="../go2_preprocessor">go2_preprocessor</a></li><li><a href="../go2_mapping_bringup">go2_mapping_bringup</a></li><li><a href="../map_builder">map_builder</a></li></ul></nav></div><div class="page-margin-content page-margin-right-top" data-on-left-page="right-top" data-on-right-page="right-top"><h3 id="table-of-contents">On this page</h3><nav role="table-of-contents" data-role="table-of-contents"><ol><li data-target-id="go2calibration" data-depth="1"><a href="#go2calibration">go2_calibration</a><ol><li data-target-id="where-it-sits" data-depth="2"><a href="#where-it-sits">Where it sits</a></li><li data-target-id="what-it-measures" data-depth="2"><a href="#what-it-measures">What it measures</a></li><li data-target-id="quick-start" data-depth="2"><a href="#quick-start">Quick start</a></li><li data-target-id="how-it-works" data-depth="2"><a href="#how-it-works">How it works</a><ol><li data-target-id="the-code-in-one-picture" data-depth="3"><a href="#the-code-in-one-picture">The code in one picture</a></li><li data-target-id="a-live-run-step-by-step" data-depth="3"><a href="#a-live-run-step-by-step">A live run, step by step</a></li><li data-target-id="the-motion" data-depth="3"><a href="#the-motion">The motion</a></li><li data-target-id="the-live-source-and-its-safety" data-depth="3"><a href="#the-live-source-and-its-safety">The live source and its safety</a></li><li data-target-id="the-bag-source" data-depth="3"><a href="#the-bag-source">The bag source</a></li><li data-target-id="the-buffer" data-depth="3"><a href="#the-buffer">The buffer</a></li><li data-target-id="the-calibration" data-depth="3"><a href="#the-calibration">The calibration</a></li><li data-target-id="the-report-and-the-file" data-depth="3"><a href="#the-report-and-the-file">The report and the file</a></li></ol></li><li data-target-id="types-and-files" data-depth="2"><a href="#types-and-files">Types and files</a></li><li data-target-id="parameters" data-depth="2"><a href="#parameters">Parameters</a></li><li data-target-id="output" data-depth="2"><a href="#output">Output</a></li><li data-target-id="build-and-test" data-depth="2"><a href="#build-and-test">Build and test</a></li><li data-target-id="results-on-our-go2" data-depth="2"><a href="#results-on-our-go2">Results on our Go2</a></li><li data-target-id="known-gaps" data-depth="2"><a href="#known-gaps">Known gaps</a></li></ol></li></ol></nav></div><h1 id="unitree-go2" data-decorative="">Unitree Go2</h1><h1 class="page-break" id="go2calibration">go2_calibration</h1><p><span class="codespan-content"><code>go2_calibration</code></span> measures how the lidar and the IMU are mounted on the Unitree Go2. It writes the result into a ROS 2 parameter file, and <span class="codespan-content"><code>go2_preprocessor</code></span> reads that file.</p><p><strong>What.</strong> One program (<span class="codespan-content"><code>ros2 run go2_calibration go2_calibration</code></span>). The robot stands still, spins and tilts for about 97 s while the program records its sensors. Then it computes a few numbers:</p><ul><li>where the lidar sits on the body, and how it is rotated;</li><li>the bias and the scale error of the body IMU;</li><li>how much too long the lidar measures every distance.</li></ul><p><strong>Why.</strong> Point-LIO builds the map from the lidar cloud and the IMU. Both must be in the same frame, the body frame, and their numbers must be right. A wrong rotation bends the whole map.</p><p>Nothing is typed into the code. CMU&rsquo;s <span class="codespan-content"><code>calibrate_imu</code></span> keeps the lidar rotation of its own robot in the code. On our firmware that rotation is wrong by about 25 deg, and their method cannot see it. Here every rotation is measured, and every result is checked. If one check fails, <strong>no file is written</strong>, so a bad calibration cannot reach the map by accident.</p><p><strong>When.</strong> Once per robot. Again after a firmware update, after the lidar was remounted, or after a hard fall.</p><h2 id="where-it-sits">Where it sits</h2><figure><pre class="mermaid">flowchart TB
+  subgraph robot[&quot;Go2 topics&quot;]
+    cloud[&quot;/utlidar/cloud&quot;]
+    base[&quot;/utlidar/cloud_base&quot;]
+    limu[&quot;/utlidar/imu&quot;]
+    state[&quot;/sportmodestate&quot;]
+  end
+  robot --&gt; cal[go2_calibration]
+  cal --&gt;|&quot;/api/sport/request&quot;| robot
+  cal --&gt;|&quot;/calibration/phase&quot;| bag[(bag)]
+  cal --&gt; yaml[(go2_calibration.yaml)]
+  bag -.-&gt;|&quot;bag:=...&quot;| cal
+  yaml --&gt; pre[go2_preprocessor]
+  pre --&gt; lio[Point-LIO]
+  script[&quot;tools/mapping/calibration.sh&quot;] -.-&gt;|runs and records| cal</pre></figure><p><span class="codespan-content"><code>tools/mapping/calibration.sh</code></span> is the easy way to run it. It records the bag, runs the program, and points <span class="codespan-content"><code>~/calibration/current.yaml</code></span> at the new file. <span class="codespan-content"><code>map.sh</code></span> then uses that link.</p><h2 id="what-it-measures">What it measures</h2><table><thead><tr><th>Result</th><th>What it means</th><th>Taken from</th><th>Written to the file</th></tr></thead><tbody><tr><td><span class="codespan-content"><code>lidar_to_body</code></span></td><td>Rotation and position of the lidar on the body</td><td><span class="codespan-content"><code>/utlidar/cloud</code></span> against its body-frame copy <span class="codespan-content"><code>/utlidar/cloud_base</code></span>, robot still</td><td>yes</td></tr><tr><td>Floor tilt</td><td>How tilted the floor looks after <span class="codespan-content"><code>lidar_to_body</code></span>. This checks <span class="codespan-content"><code>lidar_to_body</code></span> by other means</td><td>The floor in the raw cloud</td><td>no, check only</td></tr><tr><td><span class="codespan-content"><code>range_offset</code></span></td><td>The lidar measures every distance this much too long</td><td>How the flat floor bends into a bowl</td><td>yes</td></tr><tr><td><span class="codespan-content"><code>body_imu.gyro_bias</code></span></td><td>What the body gyroscope shows when still</td><td><span class="codespan-content"><code>/sportmodestate</code></span>, robot still</td><td>yes</td></tr><tr><td><span class="codespan-content"><code>body_imu.accel_scale</code></span></td><td><span class="codespan-content"><code>9.81</code></span> divided by what the still body accelerometer reads</td><td><span class="codespan-content"><code>/sportmodestate</code></span>, robot still</td><td>yes</td></tr><tr><td>Body gravity direction</td><td>Is the still accelerometer pointing up?</td><td><span class="codespan-content"><code>/sportmodestate</code></span>, robot still</td><td>no, check only</td></tr><tr><td><span class="codespan-content"><code>imu_to_body</code></span></td><td>Rotation from the lidar IMU to the body</td><td>Both gyroscopes while the robot turns and tilts</td><td>no, report only</td></tr><tr><td>Lidar IMU <span class="codespan-content"><code>gyro_bias</code></span>, <span class="codespan-content"><code>gyro_leak</code></span>, gravity</td><td>Same kind of numbers for the lidar IMU</td><td>Lidar IMU</td><td>no, report only</td></tr></tbody></table><p><span class="codespan-content"><code>go2_preprocessor</code></span> gives Point-LIO the body IMU only. The lidar IMU results stay as comments in the file, but their checks still count: one failure stops the file. The angle between <span class="codespan-content"><code>imu_to_body</code></span> and <span class="codespan-content"><code>lidar_to_body</code></span> tells whether the body IMU axes agree with the lidar mount (0.65 deg on our Go2).</p><h2 id="quick-start">Quick start</h2><p>On the robot, on a flat floor with 1 m free around it:</p><pre><code class="language-bash">tools/mapping/calibration.sh</code></pre><p>By hand:</p><pre><code class="language-bash">source ~/unitree_ros2/setup.sh
+source ~/unitree_go2/install/setup.bash
+ros2 run go2_calibration go2_calibration</code></pre><p>Without moving anything, from a recorded bag (it must contain <span class="codespan-content"><code>/calibration/phase</code></span>):</p><pre><code class="language-bash">ros2 run go2_calibration go2_calibration --ros-args -p bag:=&lt;bag folder&gt; -p output:=&lt;file&gt;</code></pre><p>Use the result with <span class="codespan-content"><code>go2_preprocessor --ros-args --params-file go2_calibration.yaml</code></span>.</p><h2 id="how-it-works">How it works</h2><h3 id="the-code-in-one-picture">The code in one picture</h3><p>The program is a straight line: <strong>read settings, fill a buffer, calibrate, report, write the file</strong>. Two sources can fill the buffer, the live robot or a bag. Both make the same calls, so <span class="codespan-content"><code>calibrate()</code></span> never knows where the data came from.</p><p>An arrow means &ldquo;uses&rdquo;.</p><figure><pre class="mermaid">flowchart TB
+  subgraph ROS[&quot;go2_calibration_ros: needs ROS&quot;]
+    main[&quot;main: settings, flow, Ctrl-C&quot;]
+    live[&quot;live_source: run_live&quot;]
+    bag[&quot;bag_source: read_bag&quot;]
+    msg[&quot;messages: topics, conversions&quot;]
+  end
+  subgraph CORE[&quot;go2_calibration_core: no ROS&quot;]
+    seq[&quot;sequence: phases and commands&quot;]
+    buf[&quot;buffer: CalibrationBuffer&quot;]
+    cal[&quot;calibrate: the calibration and checks&quot;]
+    fit[&quot;fitting: Kabsch fits&quot;]
+    flo[&quot;floor: RANSAC plane, range offset&quot;]
+    imu[&quot;imu_fit: pairing, lag, leak, stats&quot;]
+    rep[&quot;report: text and yaml&quot;]
+  end
+  main --&gt; live
+  main --&gt; bag
+  main --&gt; cal
+  main --&gt; rep
+  main --&gt; seq
+  live --&gt; msg
+  bag --&gt; msg
+  live --&gt; seq
+  live --&gt; buf
+  bag --&gt; buf
+  msg --&gt; buf
+  msg --&gt; seq
+  buf --&gt; seq
+  buf --&gt; imu
+  cal --&gt; buf
+  cal --&gt; fit
+  cal --&gt; flo
+  cal --&gt; imu
+  imu --&gt; fit
+  rep --&gt; cal</pre></figure><p>Everything in the <span class="codespan-content"><code>core</code></span> box is plain C++ with Eigen (a matrix library). It has no ROS and is unit tested. The <span class="codespan-content"><code>ros</code></span> box is thin: it only reads and writes messages.</p><h3 id="a-live-run-step-by-step">A live run, step by step</h3><figure><pre class="mermaid">sequenceDiagram
+  actor Op as Operator
+  participant M as main
+  participant L as run_live
+  participant R as Go2 robot
+  participant B as CalibrationBuffer
+  participant C as calibrate
+  participant P as report
+  Op-&gt;&gt;M: ros2 run go2_calibration
+  M-&gt;&gt;M: read_settings, build_sequence
+  M-&gt;&gt;Op: warning and 5 s countdown
+  M-&gt;&gt;L: run_live(phases, buffer)
+  loop up to 5 s
+    R--&gt;&gt;L: cloud, cloud_base, imu, sportmodestate
+  end
+  loop 10 phases, 50 Hz
+    L-&gt;&gt;R: Move, Euler or StopMove
+    L-&gt;&gt;B: set_phase(name)
+    R--&gt;&gt;L: sensor messages
+    L-&gt;&gt;B: add_lidar_imu, add_body_imu, add_scan
+  end
+  L-&gt;&gt;R: StopMove for 0.5 s
+  L--&gt;&gt;M: completed
+  M-&gt;&gt;C: calibrate(buffer.data(), limits)
+  C--&gt;&gt;M: Calibration with 11 checks
+  M-&gt;&gt;P: describe, to_parameter_file
+  P--&gt;&gt;M: report lines and yaml text
+  M-&gt;&gt;Op: report, and the file if all checks PASS</pre></figure><p><span class="codespan-content"><code>main.cpp</code></span> in four steps:</p><ol><li><strong>Settings.</strong> Every setting is a ROS parameter with a default. <span class="codespan-content"><code>build_sequence</code></span> rejects a value out of range <strong>before anything moves</strong>.</li><li><strong>Fill the buffer.</strong> Live: warn, count down 5 s (Ctrl-C cancels, nothing moves), <span class="codespan-content"><code>run_live</code></span>. Bag: <span class="codespan-content"><code>read_bag</code></span>.</li><li><strong>Calibrate and print.</strong> <span class="codespan-content"><code>calibrate()</code></span> throws a clear error if data is missing (no floor, no turning, no still sample).</li><li><strong>Write.</strong> Only if every check passed. The exit code is 0 only then.</li></ol><h3 id="the-motion">The motion</h3><p>The live source runs ten phases. A phase has a name, a length and one sport command.</p><figure><pre class="mermaid">flowchart TB
+  subgraph turns[&quot;Turns&quot;]
+    direction LR
+    s1[&quot;still 30 s&quot;] --&gt; s2[&quot;spin_left 12.6 s&quot;]
+    s2 --&gt; s3[&quot;pause 3 s&quot;]
+    s3 --&gt; s4[&quot;spin_right 12.6 s&quot;]
+    s4 --&gt; s5[&quot;pause 3 s&quot;]
+  end
+  subgraph tilts[&quot;Tilts&quot;]
+    direction LR
+    s6[&quot;balance_stand 1 s&quot;] --&gt; s7[&quot;tilt_pitch 15 s&quot;]
+    s7 --&gt; s8[&quot;tilt_roll 15 s&quot;]
+    s8 --&gt; s9[&quot;level 2 s&quot;]
+    s9 --&gt; s10[&quot;pause 3 s&quot;]
+  end
+  s5 --&gt; s6</pre></figure><table><thead><tr><th>Phase</th><th>Command</th><th>Sample use</th><th>Why</th></tr></thead><tbody><tr><td><span class="codespan-content"><code>still</code></span></td><td>StopMove</td><td><strong>still</strong></td><td>Bias, lidar mount, floor, range offset need a robot that does not move</td></tr><tr><td><span class="codespan-content"><code>spin_left</code></span>, <span class="codespan-content"><code>spin_right</code></span></td><td>Move(0, 0, +1 or -1 rad/s), 2 turns each</td><td><strong>moving</strong></td><td>The two IMUs must see the same rotation</td></tr><tr><td><span class="codespan-content"><code>tilt_pitch</code></span>, <span class="codespan-content"><code>tilt_roll</code></span></td><td>Euler, 0.2 rad sine at 0.4 Hz</td><td><strong>moving</strong></td><td>Turns about the other two axes. Turns alone leave those axes unknown</td></tr><tr><td><span class="codespan-content"><code>pause</code></span>, <span class="codespan-content"><code>balance_stand</code></span>, <span class="codespan-content"><code>level</code></span></td><td>StopMove, BalanceStand (sent once), Euler(0, 0, 0)</td><td>none</td><td>Transitions. Their samples are dropped</td></tr></tbody></table><p>The length of a spin is <span class="codespan-content"><code>turns * 2 * pi / rate</code></span> = 2 * 6.283 / 1.0 = 12.57 s. All phases together: 30 + 12.57 + 3 + 12.57 + 3 + 1 + 15 + 15 + 2 + 3 = <strong>97.1 s</strong>. With <span class="codespan-content"><code>motion.tilt_angle:=0</code></span> the tilts are left out and the run is 61.1 s.</p><p>The phase name is also the <strong>label</strong> of the samples. <span class="codespan-content"><code>use_of(name)</code></span> is the only place that decides: <span class="codespan-content"><code>still</code></span> is still, names starting with <span class="codespan-content"><code>spin_</code></span> or <span class="codespan-content"><code>tilt_</code></span> are moving, anything else is dropped. The live source publishes the name on <span class="codespan-content"><code>/calibration/phase</code></span> at 50 Hz, so a bag recorded alongside can be replayed later.</p><h3 id="the-live-source-and-its-safety">The live source and its safety</h3><p><span class="codespan-content"><code>run_live</code></span> has three parts: subscribe, wait for the sensors, run the phases.</p><figure><pre class="mermaid">flowchart TD
+  start([&quot;run_live&quot;]) --&gt; wait{&quot;all 4 sensor topics seen?&quot;}
+  wait --&gt;|&quot;no, 5 s passed&quot;| nodata([&quot;no_data: nothing moved&quot;])
+  wait --&gt;|&quot;no, Ctrl-C&quot;| stopped0([&quot;stopped: nothing moved&quot;])
+  wait --&gt;|yes| tick[&quot;spin_some: read messages&quot;]
+  tick --&gt; ctrlc{&quot;stop requested?&quot;}
+  ctrlc --&gt;|yes| stop[&quot;stop_robot: StopMove for 0.5 s&quot;]
+  ctrlc --&gt;|no| silent{&quot;/sportmodestate silent for 0.5 s?&quot;}
+  silent --&gt;|yes| stop
+  silent --&gt;|no| sp{&quot;setpoint_at(elapsed)&quot;}
+  sp --&gt;|&quot;none: sequence over&quot;| stop
+  sp --&gt;|&quot;command due, every 20 ms&quot;| send[&quot;send command, publish phase, buffer.set_phase&quot;]
+  send --&gt; tick
+  sp --&gt;|&quot;not due yet&quot;| tick
+  stop --&gt; result([&quot;completed, stopped or robot_silent&quot;])</pre></figure><p>Safety rules, all in this loop:</p><ul><li>Nothing moves until all four sensor topics have sent a message.</li><li><strong>Every</strong> way out sends StopMove for 0.5 s: the end, Ctrl-C, SIGTERM, a silent robot and any exception. <span class="codespan-content"><code>main</code></span> handles Ctrl-C itself, because rclcpp&rsquo;s own handler would shut ROS down before the robot got its StopMove.</li><li>Speed and angle have hard limits (1.5 rad/s, 0.3 rad, 1 Hz). No parameter can go above them.</li><li>Commands go out at 50 Hz, like Unitree&rsquo;s examples. The loop itself spins at 1000 Hz. At 50 Hz it kept only 1 IMU sample in 5, and each was old.</li><li>Samples get their <strong>receive time</strong>: it is the only clock both IMUs share. A bag stores the same receive time, so live and bag give the same data.</li></ul><figure><pre class="mermaid">stateDiagram-v2
+  [*] --&gt; Waiting
+  Waiting --&gt; Running: 4 topics alive
+  Waiting --&gt; [*]: 5 s without data, or Ctrl-C
+  Running --&gt; Stopping: end, Ctrl-C, SIGTERM, 0.5 s silence, error
+  Stopping --&gt; [*]: 0.5 s of StopMove sent</pre></figure><h3 id="the-bag-source">The bag source</h3><p><span class="codespan-content"><code>read_bag</code></span> replays a recorded bag, message by message, into the buffer. It makes the same calls as the live source. It opens the bag, checks that all five topics are in it (the four sensors plus <span class="codespan-content"><code>/calibration/phase</code></span>), then:</p><figure><pre class="mermaid">sequenceDiagram
+  participant F as bag file
+  participant S as read_bag
+  participant B as CalibrationBuffer
+  loop every message, in recording order
+    F--&gt;&gt;S: topic, receive time, bytes
+    alt /calibration/phase
+      S-&gt;&gt;B: set_phase(name)
+    else /utlidar/imu
+      S-&gt;&gt;B: add_lidar_imu(time, gyro, accel)
+    else /sportmodestate
+      S-&gt;&gt;B: add_body_imu(time, gyro, accel)
+    else a cloud and the buffer wants scans
+      S-&gt;&gt;B: add_scan(stamp, points, is_body_copy)
+    end
+  end</pre></figure><p>A cloud is only decoded if <span class="codespan-content"><code>wants_scans()</code></span> is true. Decoding is the slow part.</p><h3 id="the-buffer">The buffer</h3><p><span class="codespan-content"><code>CalibrationBuffer</code></span> sorts every sample into a box, depending on the <strong>current phase</strong>.</p><figure><pre class="mermaid">flowchart LR
+  ph[&quot;set_phase(name)&quot;] --&gt; use{&quot;use_of(name)&quot;}
+  use --&gt;|still| st[&quot;still_gyro, still_accel, still_body_gyro, still_body_accel, scans&quot;]
+  use --&gt;|moving| mv[&quot;moving_lidar_gyro, moving_body_gyro&quot;]
+  use --&gt;|none| drop((dropped))
+  li[&quot;add_lidar_imu&quot;] --&gt; use
+  bi[&quot;add_body_imu&quot;] --&gt; use
+  sc[&quot;add_scan&quot;] --&gt; use</pre></figure><p><span class="codespan-content"><code>set_phase</code></span> only counts a change of name, because the live source repeats it 50 times a second.</p><p><strong>Matching the two clouds.</strong> The firmware publishes every scan twice: <span class="codespan-content"><code>/utlidar/cloud</code></span> in the lidar frame and <span class="codespan-content"><code>/utlidar/cloud_base</code></span> in the body frame. Both carry the same stamp. The copy that arrives first waits in a map. When the second arrives, the points are paired by a <strong>key</strong> of <span class="codespan-content"><code>(time, intensity, ring)</code></span>:</p><figure><pre class="mermaid">sequenceDiagram
+  participant S as source
+  participant B as CalibrationBuffer
+  S-&gt;&gt;B: add_scan(stamp 100, lidar frame)
+  Note over B: no partner yet, keep it in waiting_lidar_
+  S-&gt;&gt;B: add_scan(stamp 100, body frame)
+  Note over B: partner found, match() by key
+  B-&gt;&gt;B: lidar_points and body_points get the pairs
+  B-&gt;&gt;B: floor_points get every lidar point
+  B-&gt;&gt;B: scans + 1</pre></figure><p>Example, made-up numbers: the point with key <span class="codespan-content"><code>(t=0.0123, intensity=40, ring=3)</code></span> is at <span class="codespan-content"><code>(1.0, 0.2, -0.3)</code></span> in the lidar scan and at <span class="codespan-content"><code>(-0.3, 1.0, -0.2)</code></span> in the body scan. They become one pair. A key that appears twice in one scan is skipped, because it cannot be told apart. The buffer keeps at most <span class="codespan-content"><code>max_scans</code></span> (100) matched scans, only while the robot is still. A phase change throws away scans still waiting for a partner.</p><h3 id="the-calibration">The calibration</h3><p><span class="codespan-content"><code>calibrate(data, limits)</code></span> is a pure function: numbers in, numbers out. It has six steps.</p><figure><pre class="mermaid">flowchart LR
+  subgraph inputs[&quot;CalibrationData&quot;]
+    lp[&quot;lidar_points, body_points&quot;]
+    fp[&quot;floor_points&quot;]
+    sbg[&quot;still_body_gyro&quot;]
+    sba[&quot;still_body_accel&quot;]
+    mlg[&quot;moving_lidar_gyro&quot;]
+    mbg[&quot;moving_body_gyro&quot;]
+    slg[&quot;still_gyro, still_accel&quot;]
+  end
+  lp --&gt;|&quot;1 fit_rigid&quot;| l2b[&quot;lidar_to_body&quot;]
+  fp --&gt;|&quot;1 find_floor&quot;| plane[&quot;floor plane&quot;]
+  plane --&gt; tilt[&quot;floor tilt&quot;]
+  l2b --&gt; tilt
+  fp --&gt;|&quot;1 fit_range_offset&quot;| ro[&quot;range_offset&quot;]
+  plane --&gt; ro
+  sbg --&gt;|&quot;2 mean_and_std&quot;| gb[&quot;body gyro_bias&quot;]
+  sba --&gt;|&quot;2 mean_and_std&quot;| asc[&quot;accel_scale, body tilt&quot;]
+  mlg --&gt;|&quot;3 fit_imu_rotation&quot;| i2b[&quot;imu_to_body and lag&quot;]
+  mbg --&gt; i2b
+  mlg --&gt;|&quot;3 axis_spread&quot;| spread[&quot;axis spread&quot;]
+  i2b --&gt; ang[&quot;angle to lidar_to_body&quot;]
+  l2b --&gt; ang
+  slg --&gt;|&quot;4 rotate and mean&quot;| lgb[&quot;lidar gyro_bias, gravity tilt&quot;]
+  i2b --&gt; lgb
+  mlg --&gt;|&quot;5 fit_leak&quot;| leak[&quot;gyro_leak&quot;]
+  lgb --&gt; leak
+  i2b --&gt; leak
+  gb --&gt; chk[&quot;6 eleven checks&quot;]
+  asc --&gt; chk
+  l2b --&gt; chk
+  tilt --&gt; chk
+  i2b --&gt; chk
+  spread --&gt; chk
+  lgb --&gt; chk
+  leak --&gt; chk</pre></figure><h4 id="_1-lidar-mount-and-floor">1. Lidar mount and floor</h4><p><em>Lidar mount.</em> The paired points are the same physical points in two frames. The best rotation <span class="codespan-content"><code>R</code></span> and shift <span class="codespan-content"><code>t</code></span> that carry the first set onto the second is found with the <strong>Kabsch method</strong>:</p><ol><li>subtract the centre of each point set;</li><li>add up <span class="codespan-content"><code>from * to^T</code></span> for all pairs, a 3x3 table;</li><li>its SVD (a standard matrix split, <span class="codespan-content"><code>U S V^T</code></span>) gives the rotation <span class="codespan-content"><code>R = V U^T</code></span>. If that turns out to be a mirror image (determinant -1), one axis is flipped;</li><li><span class="codespan-content"><code>t = centre_to - R * centre_from</code></span>.</li></ol><p>The error is the rms (typical size) of the distance left over. Result on our Go2: error 0.000 mm, because the firmware used the same transform to make the copy.</p><p>That is why the next step exists: the mount comes from the firmware&rsquo;s own copy, so it is not an independent measurement. The <strong>floor</strong> is.</p><p><em>Floor.</em> <span class="codespan-content"><code>find_floor</code></span> uses <strong>RANSAC</strong>:</p><ol><li>take 3 random points, make a plane through them;</li><li>keep it only if it is 0.2 to 0.7 m from the lidar (the floor, not a wall);</li><li>count the points within 3 cm of it;</li><li>repeat 600 times, keep the plane with most points;</li><li>refit that plane through all its points by least squares.</li></ol><p>The random seed is fixed, so every run gives the same answer. At most 40000 points are used. Then the floor normal is turned by <span class="codespan-content"><code>lidar_to_body</code></span>. If the mount is right it points straight up, and the <strong>floor tilt</strong> is the angle to +z. Real value on our Go2: 0.82 deg (limit 2 deg).</p><p><em>Range offset.</em> If every distance is too long by <span class="codespan-content"><code>o</code></span>, a flat floor looks like a bowl. A point whose ray hits the floor at angle <span class="codespan-content"><code>a</code></span> from the vertical appears at <span class="codespan-content"><code>h + o * cos(a)</code></span> instead of <span class="codespan-content"><code>h</code></span>. <span class="codespan-content"><code>fit_range_offset</code></span> fits <span class="codespan-content"><code>h</code></span> and <span class="codespan-content"><code>o</code></span> by least squares. Example from the formula: with <span class="codespan-content"><code>h</code></span> = 0.33 m and <span class="codespan-content"><code>o</code></span> = 0.11 m, the point straight below reads 0.44 m deep, and a point at 60 deg reads 0.33 + 0.11 * 0.5 = 0.385 m. Real result on our Go2: <span class="codespan-content"><code>o</code></span> = 0.110 m.</p><h4 id="_2-body-imu-robot-still">2. Body IMU, robot still</h4><ul><li><span class="codespan-content"><code>gyro_bias</code></span> = the mean of the still gyroscope. Its std (spread) is the noise.</li><li><span class="codespan-content"><code>accel_scale</code></span> = <span class="codespan-content"><code>9.81 / length of the mean accelerometer</code></span>. It is a <strong>scale and not a bias</strong>: standing still shows only the reading along gravity, and there a scale and a bias look the same. Real value: the still accelerometer reads 9.43 m/s^2, so <span class="codespan-content"><code>accel_scale</code></span> = 9.81 / 9.43 = 1.040.</li><li>Body tilt = angle between the mean accelerometer and +z.</li></ul><h4 id="_3-lidar-imu-rotation-report-only">3. Lidar IMU rotation (report only)</h4><p><span class="codespan-content"><code>fit_imu_rotation</code></span> matches the lidar IMU gyroscope to the body gyroscope with the same Kabsch fit, but only for samples where the robot really turns (rate at least 0.15 rad/s). Both IMUs have a different clock delay, so it tries every <strong>lag</strong> from -100 ms to +100 ms in 5 ms steps. For each lag it pairs each sample with the nearest one (at most 3 ms away), fits, and keeps the lag with the smallest error. A live run on 2026-10-19 found -40 ms.</p><p>The <strong>axis spread</strong> tells whether the robot turned about more than one axis. It is the second largest over the largest eigenvalue of the rates&rsquo; spread matrix. Spinning on the spot only turns about z, and then the rotation about z cannot be told. The tilts add the other two axes.</p><h4 id="_4-lidar-imu-bias-and-gravity">4. Lidar IMU bias and gravity</h4><p>The still lidar gyroscope and accelerometer are rotated into the body frame with <span class="codespan-content"><code>imu_to_body</code></span>. The mean gyroscope is the lidar IMU <span class="codespan-content"><code>gyro_bias</code></span>. The mean accelerometer against +z gives the gravity tilt. It is synthetic on the Go2 (154 deg on ours), which is why the lidar IMU is not used.</p><h4 id="_5-leak">5. Leak</h4><p>When the robot turns on the spot, a perfect gyroscope shows nothing on x and y. <span class="codespan-content"><code>fit_leak</code></span> measures the share of the yaw rate that still shows there. Made-up example: yaw rate z = 1.0 rad/s and x reads 0.03, so <span class="codespan-content"><code>z_to_x</code></span> = -0.03. The correction would be <span class="codespan-content"><code>x += z_to_x * z</code></span>.</p><h4 id="_6-checks">6. Checks</h4><p>Each check is one value against one limit. The defaults are what our Go2 gave on 2026-10-13, with a wide margin.</p><table><thead><tr><th>Check</th><th>Limit</th><th>Value on our Go2</th></tr></thead><tbody><tr><td>Body gyroscope noise</td><td>at most 0.02 rad/s</td><td>0.007</td></tr><tr><td>Body <span class="codespan-content"><code>accel_scale</code></span> error</td><td>at most 0.1</td><td>0.04</td></tr><tr><td>Body gravity tilt</td><td>at most 5 deg</td><td>1.2 to 2.2</td></tr><tr><td>Matched lidar points</td><td>at least 1000</td><td>151577</td></tr><tr><td><span class="codespan-content"><code>lidar_to_body</code></span> error rms</td><td>at most 1 mm</td><td>0.000</td></tr><tr><td>Floor tilt after <span class="codespan-content"><code>lidar_to_body</code></span></td><td>at most 2 deg</td><td>0.82</td></tr><tr><td><span class="codespan-content"><code>imu_to_body</code></span> error rms</td><td>at most 0.25 rad/s</td><td>0.12</td></tr><tr><td><span class="codespan-content"><code>imu_to_body</code></span> lag</td><td>at most 95 ms</td><td></td></tr><tr><td>Turn axis spread</td><td>at least 0.01</td><td>0.04</td></tr><tr><td>Still lidar gyroscope noise</td><td>at most 0.02 rad/s</td><td>0.007</td></tr><tr><td><span class="codespan-content"><code>gyro_leak</code></span> left</td><td>at most 0.1</td><td>0.034</td></tr></tbody></table><p>The lag limit is 95 ms and not 100: a lag on the edge of the search means the best lag is outside.</p><h3 id="the-report-and-the-file">The report and the file</h3><p><span class="codespan-content"><code>describe(calibration)</code></span> makes one line per result and one per check (<span class="codespan-content"><code>PASS</code></span> or <span class="codespan-content"><code>FAIL</code></span>). The terminal and the comments at the top of the file show the same lines. <span class="codespan-content"><code>to_parameter_file</code></span> writes the YAML. Numbers are always written with a decimal point and never as <span class="codespan-content"><code>1e-05</code></span>: the ROS parameter reader would take <span class="codespan-content"><code>1</code></span> for an integer and <span class="codespan-content"><code>1e-05</code></span> for a string, and an array must not mix types.</p><h2 id="types-and-files">Types and files</h2><figure><pre class="mermaid">classDiagram
+  class CalibrationBuffer
+  class CalibrationData
+  class Calibration
+  class Limits
+  class Check
+  class RigidFit
+  class Plane
+  class RangeOffset
+  class VectorStats
+  class ImuRotationFit
+  class RotationFit
+  class GyroLeak
+  CalibrationBuffer *-- CalibrationData : fills
+  Calibration *-- RigidFit : lidar_to_body
+  Calibration *-- Plane : floor
+  Calibration *-- RangeOffset : range
+  Calibration *-- VectorStats : gyro biases and accel
+  Calibration *-- ImuRotationFit : imu_to_body
+  Calibration *-- GyroLeak : leak
+  Calibration *-- Check : checks
+  ImuRotationFit *-- RotationFit : fit
+  Limits ..&gt; Check : sets the limits
+  CalibrationData ..&gt; Calibration : calibrate</pre></figure><table><thead><tr><th>File</th><th>Does</th><th>ROS</th></tr></thead><tbody><tr><td><span class="codespan-content"><code>sequence</code></span></td><td>Phases, the command at each moment, which phases are still or moving</td><td>no</td></tr><tr><td><span class="codespan-content"><code>buffer</code></span></td><td><span class="codespan-content"><code>CalibrationBuffer</code></span>: samples sorted by phase, scans matched with their copy</td><td>no</td></tr><tr><td><span class="codespan-content"><code>fitting</code></span></td><td>Kabsch rotation fit (vectors) and rigid fit (points)</td><td>no</td></tr><tr><td><span class="codespan-content"><code>floor</code></span></td><td>RANSAC floor plane, tilt from +z, range offset</td><td>no</td></tr><tr><td><span class="codespan-content"><code>imu_fit</code></span></td><td>Pairing by time, IMU rotation with lag search, axis spread, statistics, leak</td><td>no</td></tr><tr><td><span class="codespan-content"><code>calibrate</code></span></td><td>The whole calibration and its checks</td><td>no</td></tr><tr><td><span class="codespan-content"><code>report</code></span></td><td>The report lines and the parameter file</td><td>no</td></tr><tr><td><span class="codespan-content"><code>messages</code></span></td><td>Topic names, message conversions, sport requests</td><td>yes</td></tr><tr><td><span class="codespan-content"><code>bag_source</code></span></td><td><span class="codespan-content"><code>read_bag()</code></span>: a bag into the buffer</td><td>yes</td></tr><tr><td><span class="codespan-content"><code>live_source</code></span></td><td><span class="codespan-content"><code>run_live()</code></span>: drives the robot and fills the buffer</td><td>yes</td></tr><tr><td><span class="codespan-content"><code>main</code></span></td><td>Settings, the linear flow, Ctrl-C</td><td>yes</td></tr></tbody></table><p>CMake builds the ROS-free files as <span class="codespan-content"><code>go2_calibration_core</code></span>, the others as <span class="codespan-content"><code>go2_calibration_ros</code></span>. The executable and the tests link them. <span class="codespan-content"><code>messages.cpp</code></span> also turns a <span class="codespan-content"><code>Command</code></span> into the Unitree request (Move and Euler carry <span class="codespan-content"><code>{&quot;x&quot;:..,&quot;y&quot;:..,&quot;z&quot;:..}</code></span> as JSON, the API ids are 1002 BalanceStand, 1003 StopMove, 1007 Euler, 1008 Move).</p><h2 id="parameters">Parameters</h2><p>All are ROS parameters (<span class="codespan-content"><code>-p name:=value</code></span> or <span class="codespan-content"><code>--params-file</code></span>). The defaults suit any Go2 with the L1.</p><table><thead><tr><th>Parameter</th><th>Default</th><th>Meaning</th></tr></thead><tbody><tr><td><span class="codespan-content"><code>bag</code></span></td><td>empty</td><td>Empty: live run. A bag folder: calibrate from it</td></tr><tr><td><span class="codespan-content"><code>output</code></span></td><td><span class="codespan-content"><code>go2_calibration.yaml</code></span></td><td>The file written</td></tr><tr><td><span class="codespan-content"><code>node_name</code></span></td><td><span class="codespan-content"><code>go2_preprocessor</code></span></td><td>The node the file is for (its top-level key)</td></tr><tr><td><span class="codespan-content"><code>max_scans</code></span></td><td>100</td><td>Matched scans kept for the lidar mount</td></tr><tr><td><span class="codespan-content"><code>topics.cloud</code></span>, <span class="codespan-content"><code>topics.cloud_base</code></span>, <span class="codespan-content"><code>topics.imu</code></span></td><td><span class="codespan-content"><code>/utlidar/cloud</code></span>, <span class="codespan-content"><code>/utlidar/cloud_base</code></span>, <span class="codespan-content"><code>/utlidar/imu</code></span></td><td>Lidar cloud, its body-frame copy, lidar IMU</td></tr><tr><td><span class="codespan-content"><code>topics.body_state</code></span>, <span class="codespan-content"><code>topics.request</code></span>, <span class="codespan-content"><code>topics.phase</code></span></td><td><span class="codespan-content"><code>/sportmodestate</code></span>, <span class="codespan-content"><code>/api/sport/request</code></span>, <span class="codespan-content"><code>/calibration/phase</code></span></td><td>Body IMU, sport commands, phase name</td></tr><tr><td><span class="codespan-content"><code>motion.still_s</code></span>, <span class="codespan-content"><code>motion.pause_s</code></span></td><td>30, 3</td><td>s. Range 10 to 300 and 1 to 30</td></tr><tr><td><span class="codespan-content"><code>motion.spin_rate</code></span>, <span class="codespan-content"><code>motion.spin_turns</code></span></td><td>1.0, 2</td><td>rad/s (0.3 to 1.5), turns each way (0.5 to 5)</td></tr><tr><td><span class="codespan-content"><code>motion.tilt_angle</code></span>, <span class="codespan-content"><code>motion.tilt_frequency</code></span>, <span class="codespan-content"><code>motion.tilt_s</code></span></td><td>0.2, 0.4, 15</td><td>rad (0 to 0.3, 0 skips the tilts), Hz (0.1 to 1), s (2 to 60)</td></tr><tr><td><span class="codespan-content"><code>limits.*</code></span></td><td>the table in &ldquo;Checks&rdquo;</td><td><span class="codespan-content"><code>min_matched_points</code></span>, <span class="codespan-content"><code>max_mount_error_mm</code></span>, <span class="codespan-content"><code>max_floor_tilt_deg</code></span>, <span class="codespan-content"><code>max_gyro_error</code></span>, <span class="codespan-content"><code>min_axis_spread</code></span>, <span class="codespan-content"><code>max_still_noise</code></span>, <span class="codespan-content"><code>max_leak</code></span>, <span class="codespan-content"><code>max_accel_scale_error</code></span>, <span class="codespan-content"><code>max_body_tilt_deg</code></span></td></tr></tbody></table><p>A motion value outside its range stops the program before anything moves.</p><h2 id="output">Output</h2><pre><code class="language-yaml"># Go2 calibration for go2_preprocessor, written by go2_calibration on &lt;date&gt;
+# from &lt;bag or &quot;a live run&quot;&gt;.
+# ... the report and the checks, as comments ...
+go2_preprocessor:
+  ros__parameters:
+    lidar_to_body:
+      rotation: [9 values, row-major]
+      translation: [x, y, z]
+    body_imu:
+      gyro_bias: {x, y, z}
+      accel_scale: &lt;about 1.04&gt;
+    range_offset: &lt;metres&gt;</code></pre><p>Convention: <span class="codespan-content"><code>p_body = R * p_sensor + t</code></span>, <span class="codespan-content"><code>R</code></span> row-major, body frame x forward, y left, z up. The body IMU needs no rotation: <span class="codespan-content"><code>/sportmodestate</code></span> already uses the body axes.</p><figure><pre class="mermaid">flowchart LR
+  yaml[(go2_calibration.yaml)] --&gt;|&quot;lidar_to_body&quot;| cl[&quot;cloud: lidar frame to body frame&quot;]
+  yaml --&gt;|&quot;body_imu&quot;| im[&quot;IMU: remove bias, scale accelerometer&quot;]
+  yaml -.-&gt;|&quot;range_offset&quot;| ro[&quot;cloud: every lidar range shortened by it&quot;]</pre></figure><h2 id="build-and-test">Build and test</h2><p>The package needs Unitree&rsquo;s <span class="codespan-content"><code>unitree_api</code></span> and <span class="codespan-content"><code>unitree_go</code></span> messages. On the robot they come with <span class="codespan-content"><code>~/unitree_ros2</code></span>:</p><pre><code class="language-bash">cd ~/unitree_go2
+source ~/unitree_ros2/setup.sh
+colcon build --packages-select go2_calibration
+colcon test --packages-select go2_calibration &amp;&amp; colcon test-result --verbose</code></pre><p>Laptop (foxy container), once: <span class="codespan-content"><code>sudo apt install ros-foxy-rosidl-generator-dds-idl</code></span>, clone <span class="codespan-content"><code>https://github.com/unitreerobotics/unitree_ros2</code></span>, build only the messages (<span class="codespan-content"><code>cd unitree_ros2/cyclonedds_ws &amp;&amp; colcon build --packages-select unitree_api unitree_go</code></span>), and source <span class="codespan-content"><code>cyclonedds_ws/install/local_setup.bash</code></span> after <span class="codespan-content"><code>/opt/ros/foxy/setup.bash</code></span>.</p><p>Tests cover every ROS-free file, the message conversions, and the bag source (on bags the tests write). The live source drives a robot and has no unit test. It was checked on the laptop against fake topics on an isolated domain (<span class="codespan-content"><code>ROS_LOCALHOST_ONLY=1 ROS_DOMAIN_ID=77</code></span>): no robot, a full run, and Ctrl-C in the middle of a turn.</p><h2 id="results-on-our-go2">Results on our Go2</h2><p>Real numbers.</p><p>2026-10-13, bags <span class="codespan-content"><code>calib</code></span>, <span class="codespan-content"><code>standstill</code></span> and <span class="codespan-content"><code>spin</code></span> merged with phase messages (all checks PASS):</p><ul><li><span class="codespan-content"><code>lidar_to_body</code></span> = R_y(165 deg) R_z(-123 deg), t = (0.282, 0, 0), error rms 0.000 mm.</li><li>Floor tilt 0.82 deg. <span class="codespan-content"><code>range_offset</code></span> 0.110 m, lidar 0.330 m above the floor.</li><li><span class="codespan-content"><code>imu_to_body</code></span> is 0.65 deg from <span class="codespan-content"><code>lidar_to_body</code></span>: the lidar IMU gyroscope uses the cloud&rsquo;s axes.</li><li>Lidar IMU <span class="codespan-content"><code>gyro_bias</code></span> (0.0028, -0.0055, 0.0006) rad/s. Gravity 154 deg from +z after <span class="codespan-content"><code>imu_to_body</code></span>.</li></ul><p>2026-10-19, three live calibrations, body IMU:</p><ul><li><span class="codespan-content"><code>accel_scale</code></span> 1.0385 to 1.0420. The still accelerometer reads 9.41 to 9.45 m/s^2.</li><li>Gravity 1.2 to 2.2 deg from +z. Gyro bias about (-0.010, 0.011, -0.004) rad/s.</li><li>Only <span class="codespan-content"><code>calibration_03</code></span> passed every check. The other two failed the floor tilt (2.05 and 2.83 deg), and <span class="codespan-content"><code>calibration_02</code></span> also the still noise.</li></ul><h2 id="known-gaps">Known gaps</h2><ul><li><strong><span class="codespan-content"><code>range_offset</code></span> may depend on the distance.</strong> <span class="codespan-content"><code>go2_preprocessor</code></span> subtracts one constant from every range. Over all floor points it is 0.110 m. Over the floor within 1.6 m only, an earlier analysis gave 0.128 m. Check it against a wall at taped distances.</li><li><strong>The lidar mount is the firmware&rsquo;s value,</strong> not an independent measurement. The floor tilt is the only independent check.</li><li><strong>A bag needs <span class="codespan-content"><code>/calibration/phase</code></span>.</strong> Old bags without it must be merged with phase messages first.</li><li><strong>The lidar accelerometer is synthetic,</strong> so the gravity direction of the lidar IMU is reported and never used.</li></ul>
+        <div id="footnote-area">
+          <div class="footnote-rule"></div>
+        </div>
+        <div id="sibling-pages-button-area"></div>
+        <footer>
+          <div class="position-left"></div>
+          <div class="position-center"></div>
+          <div class="position-right"></div>
+        </footer>
+      </main>
+      <aside class="margin-area" id="margin-area-right">
+        <div class="position-top"></div>
+        <div class="position-middle"></div>
+        <div class="position-bottom"></div>
+      </aside>
+    </div>
+  </body>
+</html>

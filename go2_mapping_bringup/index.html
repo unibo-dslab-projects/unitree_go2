@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta name="generator" content="Quarkdown">
+    <meta charset="UTF-8">
+    <meta name="description" content="Unitree Go2 mapping and navigation">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="quarkdown:root-path" content="..">
+    <meta name="quarkdown:search-index" content="../search-index.json">
+    <title>Unitree Go2</title>
+    <script src="../script/quarkdown.min.js"></script>
+    <script>const capabilities = window.quarkdownCapabilities</script>
+    <script>window.texMacros = {}</script>
+    <link href="../lib/bootstrap-icons/bootstrap-icons.min.css" rel="stylesheet">
+    <script src="../lib/highlight.js/highlightjs.min.js"></script>
+    <script src="../lib/highlightjs-line-numbers/highlightjs-line-numbers.min.js"></script>
+    <script src="../lib/highlightjs-copy/highlightjs-copy.min.js"></script>
+    <link href="../lib/highlightjs-copy/highlightjs-copy.min.css" rel="stylesheet">
+    <script>capabilities.code = true;</script>
+    <script src="../lib/mermaid/mermaid.min.js"></script>
+    <script>capabilities.mermaid = true;</script>
+    <link href="../theme/theme.css" rel="stylesheet">
+    <style>
+
+</style>
+    <script>prepare(new DocsDocument());</script>
+<template id="sidebar-template"><nav class="sidebar" role="doc-toc"><ol><li data-target-id="go2mappingbringup" data-depth="1"><a href="#go2mappingbringup">go2_mapping_bringup</a><ol><li data-target-id="where-it-sits" data-depth="2"><a href="#where-it-sits">Where it sits</a></li><li data-target-id="what-is-inside" data-depth="2"><a href="#what-is-inside">What is inside</a></li><li data-target-id="quick-start" data-depth="2"><a href="#quick-start">Quick start</a></li><li data-target-id="how-it-works" data-depth="2"><a href="#how-it-works">How it works</a><ol><li data-target-id="who-starts-whom" data-depth="3"><a href="#who-starts-whom">Who starts whom</a></li><li data-target-id="what-happens-at-start-up" data-depth="3"><a href="#what-happens-at-start-up">What happens at start-up</a></li><li data-target-id="where-the-data-flows" data-depth="3"><a href="#where-the-data-flows">Where the data flows</a></li><li data-target-id="how-the-settings-reach-each-node" data-depth="3"><a href="#how-the-settings-reach-each-node">How the settings reach each node</a></li><li data-target-id="robot-or-laptop" data-depth="3"><a href="#robot-or-laptop">Robot or laptop</a></li><li data-target-id="which-dds" data-depth="3"><a href="#which-dds">Which DDS</a></li><li data-target-id="what-happens-on-ctrl-c" data-depth="3"><a href="#what-happens-on-ctrl-c">What happens on Ctrl-C</a></li></ol></li><li data-target-id="the-settings" data-depth="2"><a href="#the-settings">The settings</a><ol><li data-target-id="launch-arguments" data-depth="3"><a href="#launch-arguments">Launch arguments</a></li><li data-target-id="pointlioyaml" data-depth="3"><a href="#pointlioyaml">point_lio.yaml</a></li><li data-target-id="mapbuilderyaml" data-depth="3"><a href="#mapbuilderyaml">map_builder.yaml</a></li><li data-target-id="preprocessoryaml" data-depth="3"><a href="#preprocessoryaml">preprocessor.yaml</a></li></ol></li><li data-target-id="build-and-test" data-depth="2"><a href="#build-and-test">Build and test</a></li><li data-target-id="known-gaps" data-depth="2"><a href="#known-gaps">Known gaps</a></li></ol></li></ol></nav>
+</template>  </head>
+  <body class="quarkdown quarkdown-docs">
+    <header>
+      <aside class="margin-area"></aside>
+      <main>
+        <div class="search-wrapper">
+          <div class="search-field"><i class="bi bi-search"></i><input type="text" id="search-input" placeholder="Search" autocomplete="off"><kbd>/</kbd></div>
+        </div>
+      </main>
+      <aside class="margin-area"></aside>
+    </header>
+    <div class="content-wrapper">
+      <aside class="margin-area" id="margin-area-left">
+        <div class="position-top"></div>
+        <div class="position-middle"></div>
+        <div class="position-bottom"></div>
+      </aside>
+      <main><div class="page-margin-content page-margin-top-left" data-on-left-page="top-left" data-on-right-page="top-left"><p><a href="../main"><i class="icon-image bi bi-book" aria-hidden="true"></i> Unitree Go2</a></p></div><div class="page-margin-content page-margin-top-right" data-on-left-page="top-right" data-on-right-page="top-right"><p><a href="https://github.com/unibo-dslab-projects/unitree_go2" title="Source repository"><i class="icon-image bi bi-github" aria-hidden="true"></i></a></p></div><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Patrick+Hand&display=swap">
+<style>
+body.quarkdown.quarkdown-docs > header a:has(> .bi) {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+body.quarkdown.quarkdown-docs > header a > .bi {
+  font-size: 1.3em;
+}
+/* the minimal layout fills the current page link with red */
+body.quarkdown.quarkdown-docs aside nav[data-role=page-list] a[aria-current] {
+  background-color: transparent;
+  color: var(--qd-link-color);
+}
+/* quarkdown gives each sidebar 20vw and the page 45rem; here the sidebars hug
+   their links and the page takes the rest. below 1200px quarkdown stacks them. */
+@media screen and (min-width: 1201px) {
+  body.quarkdown.quarkdown-docs > :is(header, .content-wrapper) > aside {
+    flex: 0 0 auto;
+    width: max-content;
+    max-width: 25vw;
+    margin: 0;
+    padding-left: 40px;
+    padding-right: 40px;
+  }
+  /* quarkdown adds 64px next to each sidebar through :first-child and :last-child */
+  body.quarkdown.quarkdown-docs > :is(header, .content-wrapper) > aside:is(:first-child, :last-child) {
+    margin: 0;
+  }
+  body.quarkdown.quarkdown-docs > :is(header, .content-wrapper) > main {
+    flex: 1 1 auto;
+    min-width: 0;
+    max-width: none;
+    padding: 0 48px;
+    box-sizing: border-box;
+  }
+}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/svg2roughjs@3.2.3/dist/svg2roughjs.umd.min.js"></script>
+<script>
+(function () {
+  var FONT = "Patrick Hand";
+  var ROUGHNESS = 1.8;
+  // types the bundled mermaid draws by hand itself; svg2roughjs redraws the rest
+  var NATIVE = /^(flowchart|class|state|er$|requirement|mindmap|kanban)/;
+  var CONFIG = {
+    startOnLoad: false,
+    look: "handDrawn",
+    handDrawnSeed: 7,
+    theme: "neutral",
+    // svg2roughjs only copies svg text, not html labels
+    htmlLabels: false,
+    flowchart: { htmlLabels: false },
+    // neutral leaves note text white, which svg2roughjs keeps on a white note
+    themeVariables: { fontFamily: '"' + FONT + '", cursive', noteBkgColor: "#fff5ad", noteTextColor: "#333333" }
+  };
+
+  function patch(m) {
+    if (m.__sketch) return;
+    m.__sketch = true;
+    // quarkdown calls initialize with its own options, so ours are merged on top
+    var init = m.initialize.bind(m);
+    m.initialize = function (cfg) { init(Object.assign({}, cfg, CONFIG)); };
+    // mermaid sizes boxes from the font, so it must be loaded first
+    var render = m.render.bind(m);
+    m.render = function () {
+      var args = arguments;
+      return document.fonts.load('16px "' + FONT + '"').catch(function () {})
+        .then(function () { return render.apply(null, args); });
+    };
+    m.initialize({});
+  }
+
+  function sketch(svg) {
+    var type = svg.getAttribute("aria-roledescription") || "";
+    if (NATIVE.test(type) || svg.hasAttribute("data-sketched")) return;
+    svg.setAttribute("data-sketched", "");
+    // svg2roughjs sizes from width/height, and mermaid writes width="100%"
+    var vb = svg.viewBox.baseVal;
+    var width = svg.style.width;
+    svg.setAttribute("width", vb.width);
+    svg.setAttribute("height", vb.height);
+    var host = document.createElement("div");
+    var s = new svg2roughjs.Svg2Roughjs(host, svg2roughjs.OutputType.SVG);
+    s.svg = svg;
+    s.fontFamily = FONT;
+    s.randomize = false;
+    s.roughConfig = { roughness: ROUGHNESS, bowing: 1, fillStyle: "hachure", hachureGap: 6, fillWeight: 0.8, seed: 7 };
+    s.sketch().then(function () {
+      var out = host.querySelector("svg");
+      out.setAttribute("data-sketched", "");
+      svg.replaceWith(out);
+      // mermaid viewBox often starts negative; fit the box to what was drawn
+      var box = out.getBBox();
+      var pad = 6;
+      out.setAttribute("viewBox", (box.x - pad) + " " + (box.y - pad) + " " + (box.width + 2 * pad) + " " + (box.height + 2 * pad));
+      out.removeAttribute("width");
+      out.removeAttribute("height");
+      out.style.width = width || "100%";
+      out.style.maxWidth = "100%";
+    }).catch(function (e) { console.error("mermaid sketch failed", e); });
+  }
+
+  if (window.mermaid) patch(window.mermaid);
+  else document.addEventListener("DOMContentLoaded", function () { if (window.mermaid) patch(window.mermaid); });
+
+  // quarkdown swaps the svg in, sometimes from its sessionStorage cache, so watch for it
+  new MutationObserver(function () {
+    document.querySelectorAll(".mermaid > svg:not([data-sketched])").forEach(sketch);
+  }).observe(document.documentElement, { childList: true, subtree: true });
+})();
+</script><div class="page-margin-content page-margin-bottom-center" data-on-left-page="bottom-center" data-on-right-page="bottom-center"><p>Unitree Go2 · Nicolò Ghignatti</p></div><div class="page-margin-content page-margin-left-top" data-on-left-page="left-top" data-on-right-page="left-top"><nav role="navigation" data-role="page-list"><h3 id="overview" data-decorative="">Overview</h3><ul><li><a href="../main">Home</a></li></ul><h3 id="packages" data-decorative="">Packages</h3><ul><li><a href="../go2_calibration">go2_calibration</a></li><li><a href="../go2_preprocessor">go2_preprocessor</a></li><li><a href="../go2_mapping_bringup" aria-current="page">go2_mapping_bringup</a></li><li><a href="../map_builder">map_builder</a></li></ul></nav></div><div class="page-margin-content page-margin-right-top" data-on-left-page="right-top" data-on-right-page="right-top"><h3 id="table-of-contents">On this page</h3><nav role="table-of-contents" data-role="table-of-contents"><ol><li data-target-id="go2mappingbringup" data-depth="1"><a href="#go2mappingbringup">go2_mapping_bringup</a><ol><li data-target-id="where-it-sits" data-depth="2"><a href="#where-it-sits">Where it sits</a></li><li data-target-id="what-is-inside" data-depth="2"><a href="#what-is-inside">What is inside</a></li><li data-target-id="quick-start" data-depth="2"><a href="#quick-start">Quick start</a></li><li data-target-id="how-it-works" data-depth="2"><a href="#how-it-works">How it works</a><ol><li data-target-id="who-starts-whom" data-depth="3"><a href="#who-starts-whom">Who starts whom</a></li><li data-target-id="what-happens-at-start-up" data-depth="3"><a href="#what-happens-at-start-up">What happens at start-up</a></li><li data-target-id="where-the-data-flows" data-depth="3"><a href="#where-the-data-flows">Where the data flows</a></li><li data-target-id="how-the-settings-reach-each-node" data-depth="3"><a href="#how-the-settings-reach-each-node">How the settings reach each node</a></li><li data-target-id="robot-or-laptop" data-depth="3"><a href="#robot-or-laptop">Robot or laptop</a></li><li data-target-id="which-dds" data-depth="3"><a href="#which-dds">Which DDS</a></li><li data-target-id="what-happens-on-ctrl-c" data-depth="3"><a href="#what-happens-on-ctrl-c">What happens on Ctrl-C</a></li></ol></li><li data-target-id="the-settings" data-depth="2"><a href="#the-settings">The settings</a><ol><li data-target-id="launch-arguments" data-depth="3"><a href="#launch-arguments">Launch arguments</a></li><li data-target-id="pointlioyaml" data-depth="3"><a href="#pointlioyaml">point_lio.yaml</a></li><li data-target-id="mapbuilderyaml" data-depth="3"><a href="#mapbuilderyaml">map_builder.yaml</a></li><li data-target-id="preprocessoryaml" data-depth="3"><a href="#preprocessoryaml">preprocessor.yaml</a></li></ol></li><li data-target-id="build-and-test" data-depth="2"><a href="#build-and-test">Build and test</a></li><li data-target-id="known-gaps" data-depth="2"><a href="#known-gaps">Known gaps</a></li></ol></li></ol></nav></div><h1 id="unitree-go2" data-decorative="">Unitree Go2</h1><h1 class="page-break" id="go2mappingbringup">go2_mapping_bringup</h1><p><span class="codespan-content"><code>go2_mapping_bringup</code></span> starts the mapping chain. It has no code: only launch files that start the nodes, and config files that hold their settings.</p><p><strong>What.</strong> A ROS 2 package with three launch files and three config files. One command starts <span class="codespan-content"><code>go2_preprocessor</code></span>, Point-LIO and <span class="codespan-content"><code>map_builder</code></span>, gives each its settings, and connects them with the right topic names.</p><p><strong>Why.</strong> The chain has three programs from three places, and they only work together if the details match:</p><ul><li>each one needs its own settings file, and a wrong node name makes ROS ignore the file without an error;</li><li>Point-LIO reads the preprocessor&rsquo;s topics, and <span class="codespan-content"><code>map_builder</code></span> reads Point-LIO&rsquo;s topics;</li><li>the calibration file must reach the preprocessor, or the map comes out tilted;</li><li>the robot and the laptop must use the same DDS (the layer ROS uses to send messages), or they do not see each other.</li></ul><p>This package fixes all of these in one place, so nobody types them by hand.</p><p><strong>When.</strong> Every time you map. <span class="codespan-content"><code>tools/mapping/map.sh</code></span> calls it for you.</p><h2 id="where-it-sits">Where it sits</h2><figure><pre class="mermaid">flowchart TB
+  map[&quot;tools/mapping/map.sh&quot;] --&gt;|&quot;ros2 launch&quot;| bring[go2_mapping_bringup]
+  bring --&gt;|starts| pre[go2_preprocessor]
+  bring --&gt;|starts| lio[Point-LIO]
+  bring --&gt;|starts| mb[map_builder]
+  cal[(go2_calibration.yaml)] --&gt;|&quot;calibration_file&quot;| bring
+  cfg[(config folder)] --&gt; bring</pre></figure><p>The package does not run anything itself. It tells ROS what to start. The three nodes it starts have their own pages: <a href="../go2_preprocessor">go2_preprocessor</a> and <a href="../map_builder">map_builder</a>.</p><h2 id="what-is-inside">What is inside</h2><table><thead><tr><th>File</th><th>Does</th></tr></thead><tbody><tr><td><span class="codespan-content"><code>launch/mapping.launch.py</code></span></td><td>The main one. Starts the preprocessor and Point-LIO, and <span class="codespan-content"><code>map_builder</code></span> when it runs on the robot</td></tr><tr><td><span class="codespan-content"><code>launch/map_builder.launch.py</code></span></td><td>Starts <span class="codespan-content"><code>map_builder</code></span> alone. Included by the other two, not run by hand</td></tr><tr><td><span class="codespan-content"><code>launch/laptop.launch.py</code></span></td><td>The laptop side. Starts <span class="codespan-content"><code>map_builder</code></span> there when you want it there</td></tr><tr><td><span class="codespan-content"><code>config/preprocessor.yaml</code></span></td><td>The robot box of <span class="codespan-content"><code>go2_preprocessor</code></span></td></tr><tr><td><span class="codespan-content"><code>config/point_lio.yaml</code></span></td><td>All settings of Point-LIO</td></tr><tr><td><span class="codespan-content"><code>config/map_builder.yaml</code></span></td><td>Voxel size and publish rates of <span class="codespan-content"><code>map_builder</code></span></td></tr><tr><td><span class="codespan-content"><code>CMakeLists.txt</code></span></td><td>Installs <span class="codespan-content"><code>launch/</code></span> and <span class="codespan-content"><code>config/</code></span> so ROS can find them</td></tr><tr><td><span class="codespan-content"><code>package.xml</code></span></td><td>Lists the four packages it starts as run dependencies</td></tr></tbody></table><h2 id="quick-start">Quick start</h2><p>The normal way, on the robot computer. The script checks the topics, the disk and the calibration, and then calls the launch file:</p><pre><code class="language-bash">tools/mapping/map.sh</code></pre><p>The launch file alone:</p><pre><code class="language-bash">ros2 launch go2_mapping_bringup mapping.launch.py \
+    calibration_file:=$HOME/calibration/current.yaml</code></pre><p><span class="codespan-content"><code>calibration_file</code></span> has no default. This is on purpose: without it the preprocessor would use CMU&rsquo;s mount values, and the map would come out tilted. Launch stops at once if you forget it.</p><p>The same command works live and with <span class="codespan-content"><code>ros2 bag play</code></span>. All nodes use the stamps inside the messages and not the clock, so there is no <span class="codespan-content"><code>use_sim_time</code></span> switch (Foxy&rsquo;s bag player has no <span class="codespan-content"><code>--clock</code></span>).</p><h2 id="how-it-works">How it works</h2><h3 id="who-starts-whom">Who starts whom</h3><p><span class="codespan-content"><code>mapping.launch.py</code></span> is a list of actions. ROS runs them in order. The last one includes another launch file, but only when a condition is true.</p><figure><pre class="mermaid">flowchart TB
+  subgraph M[&quot;mapping.launch.py&quot;]
+    a1[&quot;1 declare calibration_file&quot;]
+    a2[&quot;2 declare map_builder_host&quot;]
+    a3[&quot;3 set RMW_IMPLEMENTATION&quot;]
+    a4[&quot;4 Node go2_preprocessor&quot;]
+    a5[&quot;5 Node point_lio&quot;]
+    a6[&quot;6 include map_builder.launch.py, if host is robot&quot;]
+  end
+  a1 --&gt; a2 --&gt; a3 --&gt; a4 --&gt; a5 --&gt; a6
+  a6 -.-&gt; B[&quot;map_builder.launch.py&quot;]
+  L[&quot;laptop.launch.py&quot;] -.-&gt;|&quot;if host is laptop&quot;| B
+  B --&gt; N[&quot;Node map_builder&quot;]</pre></figure><p>Both <span class="codespan-content"><code>mapping.launch.py</code></span> and <span class="codespan-content"><code>laptop.launch.py</code></span> include <span class="codespan-content"><code>map_builder.launch.py</code></span>. One of them has the condition true, the other false, so <span class="codespan-content"><code>map_builder</code></span> starts exactly once. Step 3 is explained in <a href="#which-dds">Which DDS</a>.</p><h3 id="what-happens-at-start-up">What happens at start-up</h3><figure><pre class="mermaid">sequenceDiagram
+  participant U as you or map.sh
+  participant L as ros2 launch
+  participant P as go2_preprocessor
+  participant O as point_lio
+  participant B as map_builder
+  U-&gt;&gt;L: mapping.launch.py calibration_file:=...
+  L-&gt;&gt;L: set RMW_IMPLEMENTATION if the shell has none
+  L-&gt;&gt;P: start, parameters from preprocessor.yaml then the calibration file
+  L-&gt;&gt;O: start, parameters from point_lio.yaml
+  L-&gt;&gt;B: start, parameters from map_builder.yaml and output_dir
+  P--&gt;&gt;P: log the calibration
+  O--&gt;&gt;O: wait for init_map_size points, robot still
+  B--&gt;&gt;B: wait for the first scan and pose</pre></figure><p>The three nodes start together, not one after the other. Nothing waits for the previous node to be ready. This is fine because a node that has no input yet just waits.</p><p>Point-LIO needs about 3 s to start, then it takes gravity and its first map from the next seconds. The robot must stand still for that time. <span class="codespan-content"><code>map.sh</code></span> prints KEEP THE ROBOT STILL for 10 s.</p><h3 id="where-the-data-flows">Where the data flows</h3><p>The launch files do not carry data. They only set the names so that the nodes find each other.</p><figure><pre class="mermaid">flowchart TB
+  robot[&quot;Go2: /utlidar/cloud and /sportmodestate&quot;] --&gt; pre[go2_preprocessor]
+  pre --&gt;|&quot;/utlidar/transformed_cloud&quot;| lio[Point-LIO]
+  pre --&gt;|&quot;/utlidar/transformed_imu&quot;| lio
+  lio --&gt;|&quot;/cloud_registered&quot;| mb[map_builder]
+  lio --&gt;|&quot;/aft_mapped_to_init&quot;| mb
+  mb --&gt;|&quot;map_builder/delta, pose&quot;| viewer[&quot;viewer, later&quot;]
+  mb -.-&gt;|&quot;Ctrl-C&quot;| files[(&quot;map.pcd and trajectory.tum&quot;)]</pre></figure><p>Where the names are set:</p><table><thead><tr><th>Connection</th><th>Set in</th><th>How</th></tr></thead><tbody><tr><td>Go2 to preprocessor</td><td><span class="codespan-content"><code>go2_preprocessor</code></span> code</td><td>Fixed in the code</td></tr><tr><td>Preprocessor to Point-LIO</td><td><span class="codespan-content"><code>point_lio.yaml</code></span></td><td><span class="codespan-content"><code>lid_topic</code></span> and <span class="codespan-content"><code>imu_topic</code></span></td></tr><tr><td>Point-LIO to <span class="codespan-content"><code>map_builder</code></span></td><td><span class="codespan-content"><code>map_builder.launch.py</code></span></td><td><span class="codespan-content"><code>remappings</code></span>: <span class="codespan-content"><code>cloud</code></span> becomes <span class="codespan-content"><code>/cloud_registered</code></span>, <span class="codespan-content"><code>odom</code></span> becomes <span class="codespan-content"><code>/aft_mapped_to_init</code></span></td></tr></tbody></table><p><span class="codespan-content"><code>map_builder</code></span> only knows the short names <span class="codespan-content"><code>cloud</code></span> and <span class="codespan-content"><code>odom</code></span>. The launch file points them at Point-LIO. The frame of <span class="codespan-content"><code>/cloud_registered</code></span> is <span class="codespan-content"><code>camera_init</code></span>, Point-LIO&rsquo;s world frame.</p><h3 id="how-the-settings-reach-each-node">How the settings reach each node</h3><figure><pre class="mermaid">flowchart LR
+  subgraph files[&quot;config files&quot;]
+    c1[&quot;preprocessor.yaml: key go2_preprocessor&quot;]
+    c2[&quot;calibration yaml: key go2_preprocessor&quot;]
+    c3[&quot;point_lio.yaml: key point_lio&quot;]
+    c4[&quot;map_builder.yaml: key map_builder&quot;]
+  end
+  c1 --&gt; pre[go2_preprocessor]
+  c2 --&gt;|&quot;overrides&quot;| pre
+  c3 --&gt; lio[point_lio]
+  c4 --&gt; mb[map_builder]
+  arg[&quot;output_dir argument&quot;] --&gt; mb</pre></figure><p>Each file starts with a key: the <strong>node name</strong>. ROS gives the file to the node with that name and ignores it for all others. If the key and the name differ, ROS says nothing and the node runs with its defaults. This is why the launch file comments say &ldquo;the node name must stay <span class="codespan-content"><code>go2_preprocessor</code></span>&rdquo;.</p><p>For the preprocessor two files are given. The second wins when both set a value. The robot box is in <span class="codespan-content"><code>preprocessor.yaml</code></span> and the measured numbers are in the calibration file, so they never clash.</p><p><span class="codespan-content"><code>output_dir</code></span> is not in <span class="codespan-content"><code>map_builder.yaml</code></span>. The launch file sets it, because <span class="codespan-content"><code>~</code></span> must mean the home folder of the machine that runs the node, and that is only known at launch time.</p><h3 id="robot-or-laptop">Robot or laptop</h3><p>By default everything runs on the robot. You can move <span class="codespan-content"><code>map_builder</code></span> to the laptop. Point-LIO then sends its scans over Wi-Fi.</p><figure><pre class="mermaid">flowchart TB
+  s{&quot;map_builder_host&quot;}
+  s --&gt;|&quot;robot, the default&quot;| r[&quot;robot: mapping.launch.py starts all three nodes&quot;]
+  s --&gt;|&quot;laptop&quot;| l1[&quot;robot: mapping.launch.py starts preprocessor and Point-LIO&quot;]
+  s --&gt;|&quot;laptop&quot;| l2[&quot;laptop: laptop.launch.py starts map_builder&quot;]</pre></figure><pre><code class="language-bash"># on the robot
+ros2 launch go2_mapping_bringup mapping.launch.py calibration_file:=... map_builder_host:=laptop
+# on the laptop
+ros2 launch go2_mapping_bringup laptop.launch.py map_builder_host:=laptop</code></pre><p>The value must be <strong>the same on both machines</strong>. Two commands that say <span class="codespan-content"><code>robot</code></span> and <span class="codespan-content"><code>laptop</code></span> would start two <span class="codespan-content"><code>map_builder</code></span>s (the second stops itself) or none. On the laptop with <span class="codespan-content"><code>robot</code></span>, the launch starts nothing.</p><h3 id="which-dds">Which DDS</h3><p>DDS is the layer under ROS that sends the messages. Foxy uses Fast-RTPS by default. The robot uses CycloneDDS. Two machines with different DDS do not talk to each other. Point-LIO also hangs on Ctrl-C with Fast-RTPS.</p><p>Both launch files therefore set <span class="codespan-content"><code>RMW_IMPLEMENTATION</code></span> to <span class="codespan-content"><code>rmw_cyclonedds_cpp</code></span>, but only if the shell has no value yet. A value you set yourself is kept.</p><h3 id="what-happens-on-ctrl-c">What happens on Ctrl-C</h3><figure><pre class="mermaid">sequenceDiagram
+  participant U as you
+  participant L as ros2 launch
+  participant P as go2_preprocessor
+  participant O as point_lio
+  participant B as map_builder
+  U-&gt;&gt;L: Ctrl-C
+  L-&gt;&gt;P: stop
+  L-&gt;&gt;O: stop
+  L-&gt;&gt;B: stop
+  B-&gt;&gt;B: save_on_exit: write map.pcd and trajectory.tum
+  O--&gt;&gt;L: &quot;terminate called without an active exception&quot;</pre></figure><p>Ctrl-C reaches every node. <span class="codespan-content"><code>map_builder</code></span> writes the map into a new folder <span class="codespan-content"><code>&lt;output_dir&gt;/&lt;time of the first scan, UTC&gt;/</code></span>. The Point-LIO message is a known flaw of its exit. It comes after the map is saved and does not cost data.</p><h2 id="the-settings">The settings</h2><h3 id="launch-arguments">Launch arguments</h3><table><thead><tr><th>Argument</th><th>Default</th><th>In</th><th>Meaning</th></tr></thead><tbody><tr><td><span class="codespan-content"><code>calibration_file</code></span></td><td>none, required</td><td><span class="codespan-content"><code>mapping.launch.py</code></span></td><td>Absolute path of the <span class="codespan-content"><code>go2_calibration</code></span> output</td></tr><tr><td><span class="codespan-content"><code>map_builder_host</code></span></td><td><span class="codespan-content"><code>robot</code></span></td><td><span class="codespan-content"><code>mapping.launch.py</code></span>, <span class="codespan-content"><code>laptop.launch.py</code></span></td><td>Which machine runs <span class="codespan-content"><code>map_builder</code></span>. Same on both</td></tr><tr><td><span class="codespan-content"><code>output_dir</code></span></td><td><span class="codespan-content"><code>~/maps</code></span></td><td><span class="codespan-content"><code>map_builder.launch.py</code></span></td><td>Folder where each run gets its sub-folder</td></tr></tbody></table><p><span class="codespan-content"><code>output_dir</code></span> is declared in <span class="codespan-content"><code>map_builder.launch.py</code></span>. Passed to <span class="codespan-content"><code>mapping.launch.py</code></span> it reaches it.</p><h3 id="pointlioyaml">point_lio.yaml</h3><p>Taken from CMU&rsquo;s <span class="codespan-content"><code>utlidar.yaml</code></span>. The file has about 60 values, each with a comment. These are the ones that differ from CMU or that you may want to change:</p><table><thead><tr><th>Parameter</th><th>Value</th><th>Why</th></tr></thead><tbody><tr><td><span class="codespan-content"><code>lid_topic</code></span>, <span class="codespan-content"><code>imu_topic</code></span></td><td>the preprocessor&rsquo;s two topics</td><td>Point-LIO reads the corrected data, not the robot&rsquo;s</td></tr><tr><td><span class="codespan-content"><code>extrinsic_T</code></span>, <span class="codespan-content"><code>extrinsic_R</code></span></td><td>zero, identity</td><td>The preprocessor already turned lidar and IMU into one body frame</td></tr><tr><td><span class="codespan-content"><code>init_map_size</code></span></td><td>5000</td><td>About 0.5 s of scans. CMU&rsquo;s 10 builds the first map from one scan, mostly floor, and the gyro bias runs away</td></tr><tr><td><span class="codespan-content"><code>gravity</code></span>, <span class="codespan-content"><code>gravity_align</code></span></td><td>(0, 0, -9.81), true</td><td>The IMU is scaled to 9.81 at rest. Without gravity, Point-LIO reads it as the robot speeding up</td></tr><tr><td><span class="codespan-content"><code>acc_norm</code></span></td><td>9.81</td><td>The accelerometer unit is m/s^2</td></tr><tr><td><span class="codespan-content"><code>satu_acc</code></span></td><td>40</td><td>The body accelerometer peaks at 29 m/s^2 at foot strikes. CMU&rsquo;s 30 would flag them</td></tr><tr><td><span class="codespan-content"><code>blind</code></span></td><td>0.5 m</td><td>Drops lidar points closer than this. It removes the robot&rsquo;s own body</td></tr><tr><td><span class="codespan-content"><code>filter_size_surf</code></span>, <span class="codespan-content"><code>filter_size_map</code></span></td><td>0.1 m</td><td>Voxel size of the scan and of Point-LIO&rsquo;s map. Smaller means finer, more memory and CPU</td></tr><tr><td><span class="codespan-content"><code>use_imu_as_input</code></span></td><td>false</td><td>The IMU is a measurement of the filter, which holds up in rough motion</td></tr><tr><td><span class="codespan-content"><code>pcd_save_en</code></span></td><td>false</td><td>Point-LIO would overwrite one file per run. <span class="codespan-content"><code>map_builder</code></span> saves each run in its own folder</td></tr></tbody></table><h3 id="mapbuilderyaml">map_builder.yaml</h3><table><thead><tr><th>Parameter</th><th>Value</th><th>Meaning</th></tr></thead><tbody><tr><td><span class="codespan-content"><code>voxel_size</code></span></td><td>0.05 m</td><td>One point per voxel. On <span class="codespan-content"><code>2026-10-19_line_01</code></span>: 45,195 points at 0.05, 14,476 at 0.10</td></tr><tr><td><span class="codespan-content"><code>delta_rate_hz</code></span></td><td>2</td><td>How often new voxels are sent</td></tr><tr><td><span class="codespan-content"><code>pose_rate_hz</code></span></td><td>10</td><td>How often the robot pose is sent</td></tr><tr><td><span class="codespan-content"><code>full_map_rate_hz</code></span></td><td>0</td><td>The whole map on a topic. 0 is off, because every message holds the whole map</td></tr><tr><td><span class="codespan-content"><code>save_on_exit</code></span></td><td>true</td><td>Save on Ctrl-C, so a run is not lost if nobody called the save service</td></tr></tbody></table><p>Calling the save service and then stopping gives two folders, <span class="codespan-content"><code>&lt;time&gt;</code></span> and <span class="codespan-content"><code>&lt;time&gt;_1</code></span>.</p><h3 id="preprocessoryaml">preprocessor.yaml</h3><p>Only the <span class="codespan-content"><code>robot_box</code></span>. See <a href="../go2_preprocessor">go2_preprocessor</a> for what the box does.</p><h2 id="build-and-test">Build and test</h2><p>The package only copies files. Build it with everything it starts:</p><pre><code class="language-bash">cd ~/unitree_go2
+source ~/unitree_ros2/setup.sh
+vcs import src &lt; go2.repos
+colcon build --packages-up-to go2_mapping_bringup</code></pre><p><span class="codespan-content"><code>vcs import</code></span> fetches Point-LIO, pinned to one commit in <span class="codespan-content"><code>go2.repos</code></span>. There are no tests. A launch file has no logic worth a unit test, and the full run is tried by <span class="codespan-content"><code>map.sh</code></span> on a bag.</p><h2 id="known-gaps">Known gaps</h2><ul><li><strong>No test for the launch files.</strong> A typo in a node name or a topic is found only by running the chain. The last full run was on the laptop with a bag (<span class="codespan-content"><code>2026-10-19_line_01</code></span>), not on the robot.</li><li><strong><span class="codespan-content"><code>map_builder_host</code></span> must match by hand.</strong> Nothing checks that the two machines have the same value. <span class="codespan-content"><code>map_builder</code></span> stops a second copy of itself, but a wrong pair that starts none is not noticed.</li><li><strong>The robot box is still CMU&rsquo;s.</strong> See <a href="../go2_preprocessor">go2_preprocessor</a>.</li><li><strong>The <span class="codespan-content"><code>RMW_IMPLEMENTATION</code></span> default hides a mismatch.</strong> A shell with <span class="codespan-content"><code>rmw_fastrtps_cpp</code></span> already set is kept, and the two machines then do not see each other, with no error.</li><li><strong><span class="codespan-content"><code>laptop.launch.py</code></span> starts nothing with <span class="codespan-content"><code>robot</code></span>.</strong> It is there for the viewer bridge, which is not written yet.</li></ul>
+        <div id="footnote-area">
+          <div class="footnote-rule"></div>
+        </div>
+        <div id="sibling-pages-button-area"></div>
+        <footer>
+          <div class="position-left"></div>
+          <div class="position-center"></div>
+          <div class="position-right"></div>
+        </footer>
+      </main>
+      <aside class="margin-area" id="margin-area-right">
+        <div class="position-top"></div>
+        <div class="position-middle"></div>
+        <div class="position-bottom"></div>
+      </aside>
+    </div>
+  </body>
+</html>

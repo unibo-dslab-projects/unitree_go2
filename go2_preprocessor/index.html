@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta name="generator" content="Quarkdown">
+    <meta charset="UTF-8">
+    <meta name="description" content="Unitree Go2 mapping and navigation">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="quarkdown:root-path" content="..">
+    <meta name="quarkdown:search-index" content="../search-index.json">
+    <title>Unitree Go2</title>
+    <script src="../script/quarkdown.min.js"></script>
+    <script>const capabilities = window.quarkdownCapabilities</script>
+    <script>window.texMacros = {}</script>
+    <link href="../lib/bootstrap-icons/bootstrap-icons.min.css" rel="stylesheet">
+    <script src="../lib/highlight.js/highlightjs.min.js"></script>
+    <script src="../lib/highlightjs-line-numbers/highlightjs-line-numbers.min.js"></script>
+    <script src="../lib/highlightjs-copy/highlightjs-copy.min.js"></script>
+    <link href="../lib/highlightjs-copy/highlightjs-copy.min.css" rel="stylesheet">
+    <script>capabilities.code = true;</script>
+    <script src="../lib/mermaid/mermaid.min.js"></script>
+    <script>capabilities.mermaid = true;</script>
+    <link href="../theme/theme.css" rel="stylesheet">
+    <style>
+
+</style>
+    <script>prepare(new DocsDocument());</script>
+<template id="sidebar-template"><nav class="sidebar" role="doc-toc"><ol><li data-target-id="go2preprocessor" data-depth="1"><a href="#go2preprocessor">go2_preprocessor</a><ol><li data-target-id="where-it-sits" data-depth="2"><a href="#where-it-sits">Where it sits</a></li><li data-target-id="what-it-changes" data-depth="2"><a href="#what-it-changes">What it changes</a></li><li data-target-id="quick-start" data-depth="2"><a href="#quick-start">Quick start</a></li><li data-target-id="how-it-works" data-depth="2"><a href="#how-it-works">How it works</a><ol><li data-target-id="the-code-in-one-picture" data-depth="3"><a href="#the-code-in-one-picture">The code in one picture</a></li><li data-target-id="start-up" data-depth="3"><a href="#start-up">Start-up</a></li><li data-target-id="a-cloud-message" data-depth="3"><a href="#a-cloud-message">A cloud message</a></li><li data-target-id="an-imu-message" data-depth="3"><a href="#an-imu-message">An IMU message</a></li><li data-target-id="types" data-depth="3"><a href="#types">Types</a></li></ol></li><li data-target-id="parameters" data-depth="2"><a href="#parameters">Parameters</a></li><li data-target-id="topics" data-depth="2"><a href="#topics">Topics</a></li><li data-target-id="build-and-test" data-depth="2"><a href="#build-and-test">Build and test</a></li><li data-target-id="known-gaps" data-depth="2"><a href="#known-gaps">Known gaps</a></li></ol></li></ol></nav>
+</template>  </head>
+  <body class="quarkdown quarkdown-docs">
+    <header>
+      <aside class="margin-area"></aside>
+      <main>
+        <div class="search-wrapper">
+          <div class="search-field"><i class="bi bi-search"></i><input type="text" id="search-input" placeholder="Search" autocomplete="off"><kbd>/</kbd></div>
+        </div>
+      </main>
+      <aside class="margin-area"></aside>
+    </header>
+    <div class="content-wrapper">
+      <aside class="margin-area" id="margin-area-left">
+        <div class="position-top"></div>
+        <div class="position-middle"></div>
+        <div class="position-bottom"></div>
+      </aside>
+      <main><div class="page-margin-content page-margin-top-left" data-on-left-page="top-left" data-on-right-page="top-left"><p><a href="../main"><i class="icon-image bi bi-book" aria-hidden="true"></i> Unitree Go2</a></p></div><div class="page-margin-content page-margin-top-right" data-on-left-page="top-right" data-on-right-page="top-right"><p><a href="https://github.com/unibo-dslab-projects/unitree_go2" title="Source repository"><i class="icon-image bi bi-github" aria-hidden="true"></i></a></p></div><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Patrick+Hand&display=swap">
+<style>
+body.quarkdown.quarkdown-docs > header a:has(> .bi) {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+body.quarkdown.quarkdown-docs > header a > .bi {
+  font-size: 1.3em;
+}
+/* the minimal layout fills the current page link with red */
+body.quarkdown.quarkdown-docs aside nav[data-role=page-list] a[aria-current] {
+  background-color: transparent;
+  color: var(--qd-link-color);
+}
+/* quarkdown gives each sidebar 20vw and the page 45rem; here the sidebars hug
+   their links and the page takes the rest. below 1200px quarkdown stacks them. */
+@media screen and (min-width: 1201px) {
+  body.quarkdown.quarkdown-docs > :is(header, .content-wrapper) > aside {
+    flex: 0 0 auto;
+    width: max-content;
+    max-width: 25vw;
+    margin: 0;
+    padding-left: 40px;
+    padding-right: 40px;
+  }
+  /* quarkdown adds 64px next to each sidebar through :first-child and :last-child */
+  body.quarkdown.quarkdown-docs > :is(header, .content-wrapper) > aside:is(:first-child, :last-child) {
+    margin: 0;
+  }
+  body.quarkdown.quarkdown-docs > :is(header, .content-wrapper) > main {
+    flex: 1 1 auto;
+    min-width: 0;
+    max-width: none;
+    padding: 0 48px;
+    box-sizing: border-box;
+  }
+}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/svg2roughjs@3.2.3/dist/svg2roughjs.umd.min.js"></script>
+<script>
+(function () {
+  var FONT = "Patrick Hand";
+  var ROUGHNESS = 1.8;
+  // types the bundled mermaid draws by hand itself; svg2roughjs redraws the rest
+  var NATIVE = /^(flowchart|class|state|er$|requirement|mindmap|kanban)/;
+  var CONFIG = {
+    startOnLoad: false,
+    look: "handDrawn",
+    handDrawnSeed: 7,
+    theme: "neutral",
+    // svg2roughjs only copies svg text, not html labels
+    htmlLabels: false,
+    flowchart: { htmlLabels: false },
+    // neutral leaves note text white, which svg2roughjs keeps on a white note
+    themeVariables: { fontFamily: '"' + FONT + '", cursive', noteBkgColor: "#fff5ad", noteTextColor: "#333333" }
+  };
+
+  function patch(m) {
+    if (m.__sketch) return;
+    m.__sketch = true;
+    // quarkdown calls initialize with its own options, so ours are merged on top
+    var init = m.initialize.bind(m);
+    m.initialize = function (cfg) { init(Object.assign({}, cfg, CONFIG)); };
+    // mermaid sizes boxes from the font, so it must be loaded first
+    var render = m.render.bind(m);
+    m.render = function () {
+      var args = arguments;
+      return document.fonts.load('16px "' + FONT + '"').catch(function () {})
+        .then(function () { return render.apply(null, args); });
+    };
+    m.initialize({});
+  }
+
+  function sketch(svg) {
+    var type = svg.getAttribute("aria-roledescription") || "";
+    if (NATIVE.test(type) || svg.hasAttribute("data-sketched")) return;
+    svg.setAttribute("data-sketched", "");
+    // svg2roughjs sizes from width/height, and mermaid writes width="100%"
+    var vb = svg.viewBox.baseVal;
+    var width = svg.style.width;
+    svg.setAttribute("width", vb.width);
+    svg.setAttribute("height", vb.height);
+    var host = document.createElement("div");
+    var s = new svg2roughjs.Svg2Roughjs(host, svg2roughjs.OutputType.SVG);
+    s.svg = svg;
+    s.fontFamily = FONT;
+    s.randomize = false;
+    s.roughConfig = { roughness: ROUGHNESS, bowing: 1, fillStyle: "hachure", hachureGap: 6, fillWeight: 0.8, seed: 7 };
+    s.sketch().then(function () {
+      var out = host.querySelector("svg");
+      out.setAttribute("data-sketched", "");
+      svg.replaceWith(out);
+      // mermaid viewBox often starts negative; fit the box to what was drawn
+      var box = out.getBBox();
+      var pad = 6;
+      out.setAttribute("viewBox", (box.x - pad) + " " + (box.y - pad) + " " + (box.width + 2 * pad) + " " + (box.height + 2 * pad));
+      out.removeAttribute("width");
+      out.removeAttribute("height");
+      out.style.width = width || "100%";
+      out.style.maxWidth = "100%";
+    }).catch(function (e) { console.error("mermaid sketch failed", e); });
+  }
+
+  if (window.mermaid) patch(window.mermaid);
+  else document.addEventListener("DOMContentLoaded", function () { if (window.mermaid) patch(window.mermaid); });
+
+  // quarkdown swaps the svg in, sometimes from its sessionStorage cache, so watch for it
+  new MutationObserver(function () {
+    document.querySelectorAll(".mermaid > svg:not([data-sketched])").forEach(sketch);
+  }).observe(document.documentElement, { childList: true, subtree: true });
+})();
+</script><div class="page-margin-content page-margin-bottom-center" data-on-left-page="bottom-center" data-on-right-page="bottom-center"><p>Unitree Go2 · Nicolò Ghignatti</p></div><div class="page-margin-content page-margin-left-top" data-on-left-page="left-top" data-on-right-page="left-top"><nav role="navigation" data-role="page-list"><h3 id="overview" data-decorative="">Overview</h3><ul><li><a href="../main">Home</a></li></ul><h3 id="packages" data-decorative="">Packages</h3><ul><li><a href="../go2_calibration">go2_calibration</a></li><li><a href="../go2_preprocessor" aria-current="page">go2_preprocessor</a></li><li><a href="../go2_mapping_bringup">go2_mapping_bringup</a></li><li><a href="../map_builder">map_builder</a></li></ul></nav></div><div class="page-margin-content page-margin-right-top" data-on-left-page="right-top" data-on-right-page="right-top"><h3 id="table-of-contents">On this page</h3><nav role="table-of-contents" data-role="table-of-contents"><ol><li data-target-id="go2preprocessor" data-depth="1"><a href="#go2preprocessor">go2_preprocessor</a><ol><li data-target-id="where-it-sits" data-depth="2"><a href="#where-it-sits">Where it sits</a></li><li data-target-id="what-it-changes" data-depth="2"><a href="#what-it-changes">What it changes</a></li><li data-target-id="quick-start" data-depth="2"><a href="#quick-start">Quick start</a></li><li data-target-id="how-it-works" data-depth="2"><a href="#how-it-works">How it works</a><ol><li data-target-id="the-code-in-one-picture" data-depth="3"><a href="#the-code-in-one-picture">The code in one picture</a></li><li data-target-id="start-up" data-depth="3"><a href="#start-up">Start-up</a></li><li data-target-id="a-cloud-message" data-depth="3"><a href="#a-cloud-message">A cloud message</a></li><li data-target-id="an-imu-message" data-depth="3"><a href="#an-imu-message">An IMU message</a></li><li data-target-id="types" data-depth="3"><a href="#types">Types</a></li></ol></li><li data-target-id="parameters" data-depth="2"><a href="#parameters">Parameters</a></li><li data-target-id="topics" data-depth="2"><a href="#topics">Topics</a></li><li data-target-id="build-and-test" data-depth="2"><a href="#build-and-test">Build and test</a></li><li data-target-id="known-gaps" data-depth="2"><a href="#known-gaps">Known gaps</a></li></ol></li></ol></nav></div><h1 id="unitree-go2" data-decorative="">Unitree Go2</h1><h1 class="page-break" id="go2preprocessor">go2_preprocessor</h1><p><span class="codespan-content"><code>go2_preprocessor</code></span> turns the raw Go2 lidar cloud and body IMU into what Point-LIO expects: both in the body frame, corrected with the numbers from <span class="codespan-content"><code>go2_calibration</code></span>.</p><p><strong>What.</strong> One ROS 2 node (<span class="codespan-content"><code>ros2 run go2_preprocessor go2_preprocessor</code></span>). It runs while you map. It listens to the raw lidar cloud and to the robot state, fixes both with the calibration file, and publishes two clean topics for Point-LIO:</p><ul><li>the cloud, moved into the body frame, with the ranges shortened and the robot&rsquo;s own points removed;</li><li>the body IMU, with the gyroscope bias removed and the accelerometer scaled to 9.81.</li></ul><p><strong>Why.</strong> Point-LIO builds the map from a cloud and an IMU. They must share one frame and tell the truth. The raw Go2 data does neither:</p><ul><li>the cloud is in the lidar frame, and the lidar is mounted upside down and tilted;</li><li>every lidar range reads about 0.11 m too long;</li><li>the body IMU has a bias, and a still accelerometer reads 9.44 m/s^2 instead of 9.81;</li><li>the lidar sees the robot&rsquo;s own back.</li></ul><p>Fed raw, Point-LIO draws a tilted and stretched map.</p><p><strong>When.</strong> Every time you map. It is the first node of the mapping chain, and <span class="codespan-content"><code>mapping.launch.py</code></span> starts it.</p><h2 id="where-it-sits">Where it sits</h2><figure><pre class="mermaid">flowchart TB
+  subgraph robot[&quot;Go2 topics&quot;]
+    cloud[&quot;/utlidar/cloud&quot;]
+    state[&quot;/sportmodestate&quot;]
+  end
+  robot --&gt; pre[go2_preprocessor]
+  cal[(go2_calibration.yaml)] --&gt; pre
+  box[(preprocessor.yaml)] --&gt; pre
+  launch[&quot;mapping.launch.py&quot;] -.-&gt;|starts| pre
+  pre --&gt;|&quot;/utlidar/transformed_cloud&quot;| lio[Point-LIO]
+  pre --&gt;|&quot;/utlidar/transformed_imu&quot;| lio</pre></figure><p>The measured numbers (<span class="codespan-content"><code>lidar_to_body</code></span>, <span class="codespan-content"><code>body_imu</code></span>, <span class="codespan-content"><code>range_offset</code></span>) come from the <a href="../go2_calibration">go2_calibration</a> file. The robot box is written by hand in <span class="codespan-content"><code>preprocessor.yaml</code></span>. The lidar&rsquo;s own IMU (<span class="codespan-content"><code>/utlidar/imu</code></span>) is not used: its accelerometer is synthetic.</p><h2 id="what-it-changes">What it changes</h2><table><thead><tr><th>Data</th><th>What the node does</th><th>Parameter</th></tr></thead><tbody><tr><td>Cloud, every range</td><td>Moves each point back towards the lidar. A point closer than the offset is dropped</td><td><span class="codespan-content"><code>range_offset</code></span></td></tr><tr><td>Cloud, every point</td><td>Turns it from the lidar frame into the body frame: <span class="codespan-content"><code>p_body = R * p_lidar + t</code></span></td><td><span class="codespan-content"><code>lidar_to_body.*</code></span></td></tr><tr><td>Cloud, robot&rsquo;s own points</td><td>Drops the points inside a box around the robot&rsquo;s back (body frame)</td><td><span class="codespan-content"><code>robot_box.*</code></span></td></tr><tr><td>IMU, gyroscope</td><td>Subtracts the still bias</td><td><span class="codespan-content"><code>body_imu.gyro_bias.*</code></span></td></tr><tr><td>IMU, accelerometer</td><td>Multiplies by the scale that makes a still reading 9.81</td><td><span class="codespan-content"><code>body_imu.accel_scale</code></span></td></tr><tr><td>IMU, repeated samples</td><td>Drops a sample whose stamp is not newer than the last one</td><td>none</td></tr></tbody></table><p>Intensity, ring and time of each point, and the stamp of the cloud, pass through unchanged.</p><h2 id="quick-start">Quick start</h2><p>With the whole mapping chain (preprocessor, Point-LIO, map builder):</p><pre><code class="language-bash">ros2 launch go2_mapping_bringup mapping.launch.py calibration_file:=$HOME/calibration/current.yaml</code></pre><p><span class="codespan-content"><code>tools/mapping/map.sh</code></span> starts the same chain with the current calibration. The node alone:</p><pre><code class="language-bash">ros2 run go2_preprocessor go2_preprocessor --ros-args \
+    --params-file src/go2_mapping_bringup/config/preprocessor.yaml \
+    --params-file $HOME/calibration/current.yaml</code></pre><p>The node name must stay <span class="codespan-content"><code>go2_preprocessor</code></span>: both files are keyed by it, and a different name makes ROS ignore them without an error.</p><h2 id="how-it-works">How it works</h2><h3 id="the-code-in-one-picture">The code in one picture</h3><p>Everything is one executable. The files in the box are plain C++ with Eigen (a matrix library), except the node, which needs ROS. An arrow means &ldquo;uses&rdquo;.</p><figure><pre class="mermaid">flowchart TB
+  subgraph EXE[&quot;one executable: go2_preprocessor&quot;]
+    main[&quot;main: starts the node&quot;]
+    node[&quot;preprocessor_node: PreprocessorNode&quot;]
+    conv[&quot;convertor: from_message, to_message&quot;]
+    rob[&quot;robot_utils: shorten_ranges, lidar_to_body, remove_robot_points, preprocess_cloud&quot;]
+    imu[&quot;imu_transform: calibrate_gyro, calibrate_accel&quot;]
+    cal[&quot;calibration: rotation_from_parameter, vector_from_parameter&quot;]
+    sch[&quot;schemas: Point, PointCloud, Box&quot;]
+  end
+  main --&gt; node
+  node --&gt; conv
+  node --&gt; rob
+  node --&gt; imu
+  node --&gt; cal
+  conv --&gt; sch
+  rob --&gt; sch</pre></figure><h3 id="start-up">Start-up</h3><p>The node reads every setting once, when it starts. All of them are read-only parameters: a later <span class="codespan-content"><code>ros2 param set</code></span> fails with an error instead of being silently ignored.</p><figure><pre class="mermaid">sequenceDiagram
+  participant L as launch file
+  participant R as ROS parameters
+  participant N as PreprocessorNode
+  participant C as calibration.cpp
+  L-&gt;&gt;R: preprocessor.yaml, then calibration_file
+  N-&gt;&gt;R: declare robot_box.* (6 values)
+  N-&gt;&gt;R: declare lidar_to_body.rotation (9) and translation (3)
+  N-&gt;&gt;C: rotation_from_parameter(9 values)
+  C--&gt;&gt;N: a rotation matrix, or an error
+  N-&gt;&gt;R: declare body_imu.* and range_offset
+  N-&gt;&gt;N: log the calibration, one line per value
+  N-&gt;&gt;N: create 2 subscriptions and 2 publishers</pre></figure><p><span class="codespan-content"><code>rotation_from_parameter</code></span> refuses a matrix that is not a rotation (stretched axes, or a mirror image), so a typo in the file stops the node at start-up. The log line <span class="codespan-content"><code>calibration:</code></span> shows whether the file was applied: look for your numbers there.</p><h3 id="a-cloud-message">A cloud message</h3><figure><pre class="mermaid">sequenceDiagram
+  participant G as Go2
+  participant N as on_cloud
+  participant V as convertor
+  participant U as robot_utils
+  participant P as Point-LIO
+  G-&gt;&gt;N: /utlidar/cloud
+  N-&gt;&gt;V: from_message(message)
+  V--&gt;&gt;N: PointCloud, lidar frame
+  N-&gt;&gt;U: preprocess_cloud(cloud, lidar_to_body, robot_box, range_offset)
+  U-&gt;&gt;U: 1 shorten_ranges
+  U-&gt;&gt;U: 2 lidar_to_body
+  U-&gt;&gt;U: 3 remove_robot_points
+  U--&gt;&gt;N: PointCloud, body frame
+  N-&gt;&gt;V: to_message(cloud)
+  N-&gt;&gt;P: /utlidar/transformed_cloud</pre></figure><p>The order matters. The robot box is written in the body frame, so the points are turned <strong>before</strong> the box is applied. The ranges are shortened first because the offset belongs to the lidar: it is measured along each ray from the lidar&rsquo;s centre. A cloud that cannot be read (data shorter than its declared size, or a missing field) is logged and skipped.</p><p><strong>Example.</strong> Real run of the actual code, with the calibration of 2026-10-19 (<span class="codespan-content"><code>lidar_to_body</code></span> and <span class="codespan-content"><code>range_offset</code></span> 0.1129 m). The points are made up: they were computed back from a known place in the body frame, with every range 0.1129 m too long, the way the lidar reads them.</p><table><thead><tr><th>Point</th><th>True place in the body frame</th><th>What the lidar reads (lidar frame)</th><th>Without <span class="codespan-content"><code>range_offset</code></span></th><th>With <span class="codespan-content"><code>range_offset</code></span> 0.1129</th></tr></thead><tbody><tr><td>wall</td><td>(2.000, 0.500, -0.100)</td><td>(0.500, -1.746, 0.575), 1.905 m</td><td>(2.108, 0.532, -0.106)</td><td>(2.000, 0.500, -0.100)</td></tr><tr><td>floor</td><td>(0.800, -0.200, -0.320)</td><td>(0.465, -0.284, 0.521), 0.754 m</td><td>(0.891, -0.235, -0.376)</td><td>(0.800, -0.200, -0.320)</td></tr><tr><td>robot&rsquo;s back</td><td>(-0.400, 0.000, -0.250)</td><td>(-0.455, 0.701, 0.075), 0.839 m</td><td>dropped, inside the box</td><td>dropped, inside the box</td></tr></tbody></table><p>Without the correction the wall sits 11 cm too far and the floor 5.6 cm too low.</p><h3 id="an-imu-message">An IMU message</h3><figure><pre class="mermaid">flowchart TD
+  m[&quot;/sportmodestate message&quot;] --&gt; s{&quot;stamp newer than the last one?&quot;}
+  s --&gt;|no| drop([&quot;dropped: a repeated sample&quot;])
+  s --&gt;|yes| g[&quot;gyro = gyroscope - gyro_bias&quot;]
+  g --&gt; a[&quot;accel = accelerometer * accel_scale&quot;]
+  a --&gt; h[&quot;Imu message: stamp of the message, frame body&quot;]
+  h --&gt; p([&quot;publish /utlidar/transformed_imu&quot;])</pre></figure><p>1 to 1.5 % of the messages repeat the previous sample, with the same stamp and the same values. Point-LIO would take the copy as one more measurement at the same instant, so the node drops it.</p><p>The stamp is the one <strong>inside</strong> the message, which uses the lidar&rsquo;s clock, and not the receive time. The orientation and the covariances stay at their defaults (&ldquo;unknown&rdquo;): Point-LIO reads only the rates and the acceleration.</p><p><strong>Example.</strong> The body IMU at rest on our Go2: the accelerometer reads (-0.146, -0.133, 9.444), with length 9.446. The scale <span class="codespan-content"><code>9.81 / 9.446</code></span> = 1.0385 turns it into (-0.152, -0.138, 9.808). The small sideways parts grow by the same factor, because it is a scale and not a bias.</p><h3 id="types">Types</h3><figure><pre class="mermaid">classDiagram
+  class PreprocessorNode
+  class SensorCalibration
+  class BodyImuCalibration
+  class Box
+  class PointCloud
+  class Point
+  PreprocessorNode *-- SensorCalibration : calibration_
+  PreprocessorNode *-- Box : robot_body_
+  SensorCalibration *-- BodyImuCalibration : body_imu
+  PointCloud *-- Point : points</pre></figure><table><thead><tr><th>File</th><th>Does</th></tr></thead><tbody><tr><td><span class="codespan-content"><code>main</code></span></td><td>Starts the node and spins</td></tr><tr><td><span class="codespan-content"><code>preprocessor_node</code></span></td><td>The two callbacks, the parameters and the topics</td></tr><tr><td><span class="codespan-content"><code>convertor</code></span></td><td><span class="codespan-content"><code>PointCloud2</code></span> message to <span class="codespan-content"><code>PointCloud</code></span> and back</td></tr><tr><td><span class="codespan-content"><code>robot_utils</code></span></td><td><span class="codespan-content"><code>shorten_ranges</code></span>, <span class="codespan-content"><code>lidar_to_body</code></span>, <span class="codespan-content"><code>remove_robot_points</code></span>, <span class="codespan-content"><code>preprocess_cloud</code></span></td></tr><tr><td><span class="codespan-content"><code>imu_transform</code></span></td><td><span class="codespan-content"><code>calibrate_gyro</code></span> and <span class="codespan-content"><code>calibrate_accel</code></span></td></tr><tr><td><span class="codespan-content"><code>calibration</code></span></td><td>Turns the parameter numbers into a rotation and a vector, and checks them</td></tr><tr><td><span class="codespan-content"><code>schemas</code></span></td><td><span class="codespan-content"><code>Point</code></span>, <span class="codespan-content"><code>PointCloud</code></span> and <span class="codespan-content"><code>Box</code></span> (<span class="codespan-content"><code>contains</code></span> uses strict limits)</td></tr></tbody></table><h2 id="parameters">Parameters</h2><p>All are read-only ROS parameters, read once at start-up.</p><table><thead><tr><th>Parameter</th><th>Default</th><th>Meaning</th></tr></thead><tbody><tr><td><span class="codespan-content"><code>lidar_to_body.rotation</code></span></td><td>CMU&rsquo;s mount</td><td>9 numbers, row-major. Must be a rotation</td></tr><tr><td><span class="codespan-content"><code>lidar_to_body.translation</code></span></td><td>(0, 0, -0.046825)</td><td>m, 3 numbers</td></tr><tr><td><span class="codespan-content"><code>body_imu.gyro_bias.x</code></span>, <span class="codespan-content"><code>.y</code></span>, <span class="codespan-content"><code>.z</code></span></td><td>0</td><td>rad/s, subtracted from the gyroscope</td></tr><tr><td><span class="codespan-content"><code>body_imu.accel_scale</code></span></td><td>1.0</td><td>multiplies the accelerometer</td></tr><tr><td><span class="codespan-content"><code>range_offset</code></span></td><td>0</td><td>m, subtracted from every lidar range</td></tr><tr><td><span class="codespan-content"><code>robot_box.min_x</code></span>, <span class="codespan-content"><code>max_x</code></span></td><td>-0.7, -0.1</td><td>m, body frame</td></tr><tr><td><span class="codespan-content"><code>robot_box.min_y</code></span>, <span class="codespan-content"><code>max_y</code></span></td><td>-0.3, 0.3</td><td>m</td></tr><tr><td><span class="codespan-content"><code>robot_box.min_z</code></span>, <span class="codespan-content"><code>max_z</code></span></td><td>-0.646825, -0.046825</td><td>m</td></tr></tbody></table><p>A name that is not in the table is not an error: ROS ignores it, and the default is used. Check the <span class="codespan-content"><code>calibration:</code></span> log line.</p><h2 id="topics">Topics</h2><table><thead><tr><th>Direction</th><th>Topic</th><th>Type</th><th>Queue</th></tr></thead><tbody><tr><td>in</td><td><span class="codespan-content"><code>/utlidar/cloud</code></span></td><td><span class="codespan-content"><code>sensor_msgs/PointCloud2</code></span></td><td>sensor data QoS</td></tr><tr><td>in</td><td><span class="codespan-content"><code>/sportmodestate</code></span></td><td><span class="codespan-content"><code>unitree_go/SportModeState</code></span></td><td>sensor data QoS</td></tr><tr><td>out</td><td><span class="codespan-content"><code>/utlidar/transformed_cloud</code></span></td><td><span class="codespan-content"><code>sensor_msgs/PointCloud2</code></span>, frame <span class="codespan-content"><code>body</code></span></td><td>10</td></tr><tr><td>out</td><td><span class="codespan-content"><code>/utlidar/transformed_imu</code></span></td><td><span class="codespan-content"><code>sensor_msgs/Imu</code></span>, frame <span class="codespan-content"><code>body</code></span></td><td>50</td></tr></tbody></table><p>The topic names are fixed in the code. The output IMU queue is deeper because the IMU is much faster than the lidar.</p><h2 id="build-and-test">Build and test</h2><p>Needs Unitree&rsquo;s <span class="codespan-content"><code>unitree_go</code></span> messages. On the robot they come with <span class="codespan-content"><code>~/unitree_ros2</code></span>:</p><pre><code class="language-bash">cd ~/unitree_go2
+source ~/unitree_ros2/setup.sh
+colcon build --packages-select go2_preprocessor
+colcon test --packages-select go2_preprocessor &amp;&amp; colcon test-result --verbose</code></pre><p>Four test programs, one per file: <span class="codespan-content"><code>test_convertor</code></span> (round trip and layout), <span class="codespan-content"><code>test_schemas</code></span> (the box limits), <span class="codespan-content"><code>test_robot_utils</code></span> (turn, filter, and both in order), <span class="codespan-content"><code>test_imu_transform</code></span>. Each one compiles the file it tests again, because the code lives in the executable and not in a library.</p><h2 id="known-gaps">Known gaps</h2><ul><li><strong>The box is still CMU&rsquo;s.</strong> <span class="codespan-content"><code>robot_box</code></span> was made for CMU&rsquo;s <span class="codespan-content"><code>lidar_to_body</code></span> translation (0, 0, -0.046825). Ours is (0.282, 0, 0). The comment in <span class="codespan-content"><code>preprocessor.yaml</code></span> says to check it in RViz with the real calibration. Not done yet.</li><li><strong>No calibration file means CMU&rsquo;s mount.</strong> Started alone without a calibration file, the node uses CMU&rsquo;s rotation and no IMU correction, and the map comes out tilted. <span class="codespan-content"><code>mapping.launch.py</code></span> requires <span class="codespan-content"><code>calibration_file</code></span>, but <span class="codespan-content"><code>ros2 run</code></span> does not. Only the start-up log shows it.</li><li><strong><span class="codespan-content"><code>calibration.cpp</code></span> has no unit test.</strong> It is what stops a stretched or mirrored rotation, and the wrong number of values. The four test programs do not include it. <span class="codespan-content"><code>shorten_ranges</code></span> has none yet either.</li><li><strong>The log line counts range drops as robot points.</strong> <span class="codespan-content"><code>robot points removed</code></span> is points in minus points out, so it also counts the points dropped for being closer than <span class="codespan-content"><code>range_offset</code></span>.</li></ul>
+        <div id="footnote-area">
+          <div class="footnote-rule"></div>
+        </div>
+        <div id="sibling-pages-button-area"></div>
+        <footer>
+          <div class="position-left"></div>
+          <div class="position-center"></div>
+          <div class="position-right"></div>
+        </footer>
+      </main>
+      <aside class="margin-area" id="margin-area-right">
+        <div class="position-top"></div>
+        <div class="position-middle"></div>
+        <div class="position-bottom"></div>
+      </aside>
+    </div>
+  </body>
+</html>
