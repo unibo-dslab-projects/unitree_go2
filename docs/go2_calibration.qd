@@ -1,0 +1,604 @@
+.include {docs}
+
+# go2_calibration
+
+`go2_calibration` measures how the lidar and the IMU are mounted on the Unitree Go2. It writes the
+result into a ROS 2 parameter file, and `go2_preprocessor` reads that file.
+
+**What.** One program (`ros2 run go2_calibration go2_calibration`). The robot stands still, spins
+and tilts for about 97 s while the program records its sensors. Then it computes a few numbers:
+
+- where the lidar sits on the body, and how it is rotated;
+- the bias and the scale error of the body IMU;
+- how much too long the lidar measures every distance.
+
+**Why.** Point-LIO builds the map from the lidar cloud and the IMU. Both must be in the same frame,
+the body frame, and their numbers must be right. A wrong rotation bends the whole map.
+
+Nothing is typed into the code. CMU's `calibrate_imu` keeps the lidar rotation of its own robot in
+the code. On our firmware that rotation is wrong by about 25 deg, and their method cannot see it.
+Here every rotation is measured, and every result is checked. If one check fails, **no file is
+written**, so a bad calibration cannot reach the map by accident.
+
+**When.** Once per robot. Again after a firmware update, after the lidar was remounted, or after a
+hard fall.
+
+## Where it sits
+
+.mermaid
+    flowchart TB
+      subgraph robot["Go2 topics"]
+        cloud["/utlidar/cloud"]
+        base["/utlidar/cloud_base"]
+        limu["/utlidar/imu"]
+        state["/sportmodestate"]
+      end
+      robot --> cal[go2_calibration]
+      cal -->|"/api/sport/request"| robot
+      cal -->|"/calibration/phase"| bag[(bag)]
+      cal --> yaml[(go2_calibration.yaml)]
+      bag -.->|"bag:=..."| cal
+      yaml --> pre[go2_preprocessor]
+      pre --> lio[Point-LIO]
+      script["tools/mapping/calibration.sh"] -.->|runs and records| cal
+
+`tools/mapping/calibration.sh` is the easy way to run it. It records the bag, runs the program, and
+points `~/calibration/current.yaml` at the new file. `map.sh` then uses that link.
+
+## What it measures
+
+| Result | What it means | Taken from | Written to the file |
+|---|---|---|---|
+| `lidar_to_body` | Rotation and position of the lidar on the body | `/utlidar/cloud` against its body-frame copy `/utlidar/cloud_base`, robot still | yes |
+| Floor tilt | How tilted the floor looks after `lidar_to_body`. This checks `lidar_to_body` by other means | The floor in the raw cloud | no, check only |
+| `range_offset` | The lidar measures every distance this much too long | How the flat floor bends into a bowl | yes |
+| `body_imu.gyro_bias` | What the body gyroscope shows when still | `/sportmodestate`, robot still | yes |
+| `body_imu.accel_scale` | `9.81` divided by what the still body accelerometer reads | `/sportmodestate`, robot still | yes |
+| Body gravity direction | Is the still accelerometer pointing up? | `/sportmodestate`, robot still | no, check only |
+| `imu_to_body` | Rotation from the lidar IMU to the body | Both gyroscopes while the robot turns and tilts | no, report only |
+| Lidar IMU `gyro_bias`, `gyro_leak`, gravity | Same kind of numbers for the lidar IMU | Lidar IMU | no, report only |
+
+`go2_preprocessor` gives Point-LIO the body IMU only. The lidar IMU results stay as comments in the
+file, but their checks still count: one failure stops the file. The angle between `imu_to_body` and
+`lidar_to_body` tells whether the body IMU axes agree with the lidar mount (0.65 deg on our Go2).
+
+## Quick start
+
+On the robot, on a flat floor with 1 m free around it:
+
+```bash
+tools/mapping/calibration.sh
+```
+
+By hand:
+
+```bash
+source ~/unitree_ros2/setup.sh
+source ~/unitree_go2/install/setup.bash
+ros2 run go2_calibration go2_calibration
+```
+
+Without moving anything, from a recorded bag (it must contain `/calibration/phase`):
+
+```bash
+ros2 run go2_calibration go2_calibration --ros-args -p bag:=<bag folder> -p output:=<file>
+```
+
+Use the result with `go2_preprocessor --ros-args --params-file go2_calibration.yaml`.
+
+## How it works
+
+### The code in one picture
+
+The program is a straight line: **read settings, fill a buffer, calibrate, report, write the file**.
+Two sources can fill the buffer, the live robot or a bag. Both make the same calls, so
+`calibrate()` never knows where the data came from.
+
+An arrow means "uses".
+
+.mermaid
+    flowchart TB
+      subgraph ROS["go2_calibration_ros: needs ROS"]
+        main["main: settings, flow, Ctrl-C"]
+        live["live_source: run_live"]
+        bag["bag_source: read_bag"]
+        msg["messages: topics, conversions"]
+      end
+      subgraph CORE["go2_calibration_core: no ROS"]
+        seq["sequence: phases and commands"]
+        buf["buffer: CalibrationBuffer"]
+        cal["calibrate: the calibration and checks"]
+        fit["fitting: Kabsch fits"]
+        flo["floor: RANSAC plane, range offset"]
+        imu["imu_fit: pairing, lag, leak, stats"]
+        rep["report: text and yaml"]
+      end
+      main --> live
+      main --> bag
+      main --> cal
+      main --> rep
+      main --> seq
+      live --> msg
+      bag --> msg
+      live --> seq
+      live --> buf
+      bag --> buf
+      msg --> buf
+      msg --> seq
+      buf --> seq
+      buf --> imu
+      cal --> buf
+      cal --> fit
+      cal --> flo
+      cal --> imu
+      imu --> fit
+      rep --> cal
+
+Everything in the `core` box is plain C++ with Eigen (a matrix library). It has no ROS and is unit
+tested. The `ros` box is thin: it only reads and writes messages.
+
+### A live run, step by step
+
+.mermaid
+    sequenceDiagram
+      actor Op as Operator
+      participant M as main
+      participant L as run_live
+      participant R as Go2 robot
+      participant B as CalibrationBuffer
+      participant C as calibrate
+      participant P as report
+      Op->>M: ros2 run go2_calibration
+      M->>M: read_settings, build_sequence
+      M->>Op: warning and 5 s countdown
+      M->>L: run_live(phases, buffer)
+      loop up to 5 s
+        R-->>L: cloud, cloud_base, imu, sportmodestate
+      end
+      loop 10 phases, 50 Hz
+        L->>R: Move, Euler or StopMove
+        L->>B: set_phase(name)
+        R-->>L: sensor messages
+        L->>B: add_lidar_imu, add_body_imu, add_scan
+      end
+      L->>R: StopMove for 0.5 s
+      L-->>M: completed
+      M->>C: calibrate(buffer.data(), limits)
+      C-->>M: Calibration with 11 checks
+      M->>P: describe, to_parameter_file
+      P-->>M: report lines and yaml text
+      M->>Op: report, and the file if all checks PASS
+
+`main.cpp` in four steps:
+
+1. **Settings.** Every setting is a ROS parameter with a default. `build_sequence` rejects a value
+   out of range **before anything moves**.
+2. **Fill the buffer.** Live: warn, count down 5 s (Ctrl-C cancels, nothing moves), `run_live`. Bag:
+   `read_bag`.
+3. **Calibrate and print.** `calibrate()` throws a clear error if data is missing (no floor, no
+   turning, no still sample).
+4. **Write.** Only if every check passed. The exit code is 0 only then.
+
+### The motion
+
+The live source runs ten phases. A phase has a name, a length and one sport command.
+
+.mermaid
+    flowchart TB
+      subgraph turns["Turns"]
+        direction LR
+        s1["still 30 s"] --> s2["spin_left 12.6 s"]
+        s2 --> s3["pause 3 s"]
+        s3 --> s4["spin_right 12.6 s"]
+        s4 --> s5["pause 3 s"]
+      end
+      subgraph tilts["Tilts"]
+        direction LR
+        s6["balance_stand 1 s"] --> s7["tilt_pitch 15 s"]
+        s7 --> s8["tilt_roll 15 s"]
+        s8 --> s9["level 2 s"]
+        s9 --> s10["pause 3 s"]
+      end
+      s5 --> s6
+
+| Phase | Command | Sample use | Why |
+|---|---|---|---|
+| `still` | StopMove | **still** | Bias, lidar mount, floor, range offset need a robot that does not move |
+| `spin_left`, `spin_right` | Move(0, 0, +1 or -1 rad/s), 2 turns each | **moving** | The two IMUs must see the same rotation |
+| `tilt_pitch`, `tilt_roll` | Euler, 0.2 rad sine at 0.4 Hz | **moving** | Turns about the other two axes. Turns alone leave those axes unknown |
+| `pause`, `balance_stand`, `level` | StopMove, BalanceStand (sent once), Euler(0, 0, 0) | none | Transitions. Their samples are dropped |
+
+The length of a spin is `turns * 2 * pi / rate` = 2 * 6.283 / 1.0 = 12.57 s. All phases together:
+30 + 12.57 + 3 + 12.57 + 3 + 1 + 15 + 15 + 2 + 3 = **97.1 s**. With `motion.tilt_angle:=0` the tilts
+are left out and the run is 61.1 s.
+
+The phase name is also the **label** of the samples. `use_of(name)` is the only place that decides:
+`still` is still, names starting with `spin_` or `tilt_` are moving, anything else is dropped. The
+live source publishes the name on `/calibration/phase` at 50 Hz, so a bag recorded alongside can be
+replayed later.
+
+### The live source and its safety
+
+`run_live` has three parts: subscribe, wait for the sensors, run the phases.
+
+.mermaid
+    flowchart TD
+      start(["run_live"]) --> wait{"all 4 sensor topics seen?"}
+      wait -->|"no, 5 s passed"| nodata(["no_data: nothing moved"])
+      wait -->|"no, Ctrl-C"| stopped0(["stopped: nothing moved"])
+      wait -->|yes| tick["spin_some: read messages"]
+      tick --> ctrlc{"stop requested?"}
+      ctrlc -->|yes| stop["stop_robot: StopMove for 0.5 s"]
+      ctrlc -->|no| silent{"/sportmodestate silent for 0.5 s?"}
+      silent -->|yes| stop
+      silent -->|no| sp{"setpoint_at(elapsed)"}
+      sp -->|"none: sequence over"| stop
+      sp -->|"command due, every 20 ms"| send["send command, publish phase, buffer.set_phase"]
+      send --> tick
+      sp -->|"not due yet"| tick
+      stop --> result(["completed, stopped or robot_silent"])
+
+Safety rules, all in this loop:
+
+- Nothing moves until all four sensor topics have sent a message.
+- **Every** way out sends StopMove for 0.5 s: the end, Ctrl-C, SIGTERM, a silent robot and any
+  exception. `main` handles Ctrl-C itself, because rclcpp's own handler would shut ROS down before the
+  robot got its StopMove.
+- Speed and angle have hard limits (1.5 rad/s, 0.3 rad, 1 Hz). No parameter can go above them.
+- Commands go out at 50 Hz, like Unitree's examples. The loop itself spins at 1000 Hz. At 50 Hz it
+  kept only 1 IMU sample in 5, and each was old.
+- Samples get their **receive time**: it is the only clock both IMUs share. A bag stores the same
+  receive time, so live and bag give the same data.
+
+.mermaid
+    stateDiagram-v2
+      [*] --> Waiting
+      Waiting --> Running: 4 topics alive
+      Waiting --> [*]: 5 s without data, or Ctrl-C
+      Running --> Stopping: end, Ctrl-C, SIGTERM, 0.5 s silence, error
+      Stopping --> [*]: 0.5 s of StopMove sent
+
+### The bag source
+
+`read_bag` replays a recorded bag, message by message, into the buffer. It makes the same calls
+as the live source. It opens the bag, checks that all five topics are in it (the four sensors
+plus `/calibration/phase`), then:
+
+.mermaid
+    sequenceDiagram
+      participant F as bag file
+      participant S as read_bag
+      participant B as CalibrationBuffer
+      loop every message, in recording order
+        F-->>S: topic, receive time, bytes
+        alt /calibration/phase
+          S->>B: set_phase(name)
+        else /utlidar/imu
+          S->>B: add_lidar_imu(time, gyro, accel)
+        else /sportmodestate
+          S->>B: add_body_imu(time, gyro, accel)
+        else a cloud and the buffer wants scans
+          S->>B: add_scan(stamp, points, is_body_copy)
+        end
+      end
+
+A cloud is only decoded if `wants_scans()` is true. Decoding is the slow part.
+
+### The buffer
+
+`CalibrationBuffer` sorts every sample into a box, depending on the **current phase**.
+
+.mermaid
+    flowchart LR
+      ph["set_phase(name)"] --> use{"use_of(name)"}
+      use -->|still| st["still_gyro, still_accel, still_body_gyro, still_body_accel, scans"]
+      use -->|moving| mv["moving_lidar_gyro, moving_body_gyro"]
+      use -->|none| drop((dropped))
+      li["add_lidar_imu"] --> use
+      bi["add_body_imu"] --> use
+      sc["add_scan"] --> use
+
+`set_phase` only counts a change of name, because the live source repeats it 50 times a second.
+
+**Matching the two clouds.** The firmware publishes every scan twice: `/utlidar/cloud` in the lidar
+frame and `/utlidar/cloud_base` in the body frame. Both carry the same stamp. The copy that arrives
+first waits in a map. When the second arrives, the points are paired by a **key** of
+`(time, intensity, ring)`:
+
+.mermaid
+    sequenceDiagram
+      participant S as source
+      participant B as CalibrationBuffer
+      S->>B: add_scan(stamp 100, lidar frame)
+      Note over B: no partner yet, keep it in waiting_lidar_
+      S->>B: add_scan(stamp 100, body frame)
+      Note over B: partner found, match() by key
+      B->>B: lidar_points and body_points get the pairs
+      B->>B: floor_points get every lidar point
+      B->>B: scans + 1
+
+Example, made-up numbers: the point with key `(t=0.0123, intensity=40, ring=3)` is at
+`(1.0, 0.2, -0.3)` in the lidar scan and at `(-0.3, 1.0, -0.2)` in the body scan. They become one
+pair. A key that appears twice in one scan is skipped, because it cannot be told apart. The buffer
+keeps at most `max_scans` (100) matched scans, only while the robot is still. A phase change throws
+away scans still waiting for a partner.
+
+### The calibration
+
+`calibrate(data, limits)` is a pure function: numbers in, numbers out. It has six steps.
+
+.mermaid
+    flowchart LR
+      subgraph inputs["CalibrationData"]
+        lp["lidar_points, body_points"]
+        fp["floor_points"]
+        sbg["still_body_gyro"]
+        sba["still_body_accel"]
+        mlg["moving_lidar_gyro"]
+        mbg["moving_body_gyro"]
+        slg["still_gyro, still_accel"]
+      end
+      lp -->|"1 fit_rigid"| l2b["lidar_to_body"]
+      fp -->|"1 find_floor"| plane["floor plane"]
+      plane --> tilt["floor tilt"]
+      l2b --> tilt
+      fp -->|"1 fit_range_offset"| ro["range_offset"]
+      plane --> ro
+      sbg -->|"2 mean_and_std"| gb["body gyro_bias"]
+      sba -->|"2 mean_and_std"| asc["accel_scale, body tilt"]
+      mlg -->|"3 fit_imu_rotation"| i2b["imu_to_body and lag"]
+      mbg --> i2b
+      mlg -->|"3 axis_spread"| spread["axis spread"]
+      i2b --> ang["angle to lidar_to_body"]
+      l2b --> ang
+      slg -->|"4 rotate and mean"| lgb["lidar gyro_bias, gravity tilt"]
+      i2b --> lgb
+      mlg -->|"5 fit_leak"| leak["gyro_leak"]
+      lgb --> leak
+      i2b --> leak
+      gb --> chk["6 eleven checks"]
+      asc --> chk
+      l2b --> chk
+      tilt --> chk
+      i2b --> chk
+      spread --> chk
+      lgb --> chk
+      leak --> chk
+
+#### 1. Lidar mount and floor
+
+*Lidar mount.* The paired points are the same physical points in two frames. The best rotation `R`
+and shift `t` that carry the first set onto the second is found with the **Kabsch method**:
+
+1. subtract the centre of each point set;
+2. add up `from * to^T` for all pairs, a 3x3 table;
+3. its SVD (a standard matrix split, `U S V^T`) gives the rotation `R = V U^T`. If that turns out
+   to be a mirror image (determinant -1), one axis is flipped;
+4. `t = centre_to - R * centre_from`.
+
+The error is the rms (typical size) of the distance left over. Result on our Go2: error 0.000 mm,
+because the firmware used the same transform to make the copy.
+
+That is why the next step exists: the mount comes from the firmware's own copy, so it is not an
+independent measurement. The **floor** is.
+
+*Floor.* `find_floor` uses **RANSAC**:
+
+1. take 3 random points, make a plane through them;
+2. keep it only if it is 0.2 to 0.7 m from the lidar (the floor, not a wall);
+3. count the points within 3 cm of it;
+4. repeat 600 times, keep the plane with most points;
+5. refit that plane through all its points by least squares.
+
+The random seed is fixed, so every run gives the same answer. At most 40000 points are used. Then
+the floor normal is turned by `lidar_to_body`. If the mount is right it points straight up, and the
+**floor tilt** is the angle to +z. Real value on our Go2: 0.82 deg (limit 2 deg).
+
+*Range offset.* If every distance is too long by `o`, a flat floor looks like a bowl. A point whose
+ray hits the floor at angle `a` from the vertical appears at `h + o * cos(a)` instead of `h`.
+`fit_range_offset` fits `h` and `o` by least squares. Example from the formula: with `h` = 0.33 m
+and `o` = 0.11 m, the point straight below reads 0.44 m deep, and a point at 60 deg reads
+0.33 + 0.11 * 0.5 = 0.385 m. Real result on our Go2: `o` = 0.110 m.
+
+#### 2. Body IMU, robot still
+
+- `gyro_bias` = the mean of the still gyroscope. Its std (spread) is the noise.
+- `accel_scale` = `9.81 / length of the mean accelerometer`. It is a **scale and not a bias**:
+  standing still shows only the reading along gravity, and there a scale and a bias look the same.
+  Real value: the still accelerometer reads 9.43 m/s^2, so `accel_scale` = 9.81 / 9.43 = 1.040.
+- Body tilt = angle between the mean accelerometer and +z.
+
+#### 3. Lidar IMU rotation (report only)
+
+`fit_imu_rotation` matches the lidar IMU gyroscope to the body gyroscope with the same Kabsch fit,
+but only for samples where the robot really turns (rate at least 0.15 rad/s). Both IMUs have a
+different clock delay, so it tries every **lag** from -100 ms to +100 ms in 5 ms steps. For each lag
+it pairs each sample with the nearest one (at most 3 ms away), fits, and keeps the lag with the
+smallest error. A live run on 2026-10-19 found -40 ms.
+
+The **axis spread** tells whether the robot turned about more than one axis. It is the second
+largest over the largest eigenvalue of the rates' spread matrix. Spinning on the spot only turns about z,
+and then the rotation about z cannot be told. The tilts add the other two axes.
+
+#### 4. Lidar IMU bias and gravity
+
+The still lidar gyroscope and accelerometer are rotated into the body frame with `imu_to_body`. The
+mean gyroscope is the lidar IMU `gyro_bias`. The mean accelerometer against +z gives the gravity
+tilt. It is synthetic on the Go2 (154 deg on ours), which is why the lidar IMU is not used.
+
+#### 5. Leak
+
+When the robot turns on the spot, a perfect gyroscope shows nothing on x and y. `fit_leak` measures
+the share of the yaw rate that still shows there. Made-up example: yaw rate z = 1.0 rad/s and x reads
+0.03, so `z_to_x` = -0.03. The correction would be `x += z_to_x * z`.
+
+#### 6. Checks
+
+Each check is one value against one limit. The defaults are what our Go2 gave on 2026-10-13, with a
+wide margin.
+
+| Check | Limit | Value on our Go2 |
+|---|---|---|
+| Body gyroscope noise | at most 0.02 rad/s | 0.007 |
+| Body `accel_scale` error | at most 0.1 | 0.04 |
+| Body gravity tilt | at most 5 deg | 1.2 to 2.2 |
+| Matched lidar points | at least 1000 | 151577 |
+| `lidar_to_body` error rms | at most 1 mm | 0.000 |
+| Floor tilt after `lidar_to_body` | at most 2 deg | 0.82 |
+| `imu_to_body` error rms | at most 0.25 rad/s | 0.12 |
+| `imu_to_body` lag | at most 95 ms | |
+| Turn axis spread | at least 0.01 | 0.04 |
+| Still lidar gyroscope noise | at most 0.02 rad/s | 0.007 |
+| `gyro_leak` left | at most 0.1 | 0.034 |
+
+The lag limit is 95 ms and not 100: a lag on the edge of the search means the best lag is outside.
+
+### The report and the file
+
+`describe(calibration)` makes one line per result and one per check (`PASS` or `FAIL`). The terminal
+and the comments at the top of the file show the same lines. `to_parameter_file` writes the YAML.
+Numbers are always written with a decimal point and never as `1e-05`: the ROS parameter reader would
+take `1` for an integer and `1e-05` for a string, and an array must not mix types.
+
+## Types and files
+
+.mermaid
+    classDiagram
+      class CalibrationBuffer
+      class CalibrationData
+      class Calibration
+      class Limits
+      class Check
+      class RigidFit
+      class Plane
+      class RangeOffset
+      class VectorStats
+      class ImuRotationFit
+      class RotationFit
+      class GyroLeak
+      CalibrationBuffer *-- CalibrationData : fills
+      Calibration *-- RigidFit : lidar_to_body
+      Calibration *-- Plane : floor
+      Calibration *-- RangeOffset : range
+      Calibration *-- VectorStats : gyro biases and accel
+      Calibration *-- ImuRotationFit : imu_to_body
+      Calibration *-- GyroLeak : leak
+      Calibration *-- Check : checks
+      ImuRotationFit *-- RotationFit : fit
+      Limits ..> Check : sets the limits
+      CalibrationData ..> Calibration : calibrate
+
+| File | Does | ROS |
+|---|---|---|
+| `sequence` | Phases, the command at each moment, which phases are still or moving | no |
+| `buffer` | `CalibrationBuffer`: samples sorted by phase, scans matched with their copy | no |
+| `fitting` | Kabsch rotation fit (vectors) and rigid fit (points) | no |
+| `floor` | RANSAC floor plane, tilt from +z, range offset | no |
+| `imu_fit` | Pairing by time, IMU rotation with lag search, axis spread, statistics, leak | no |
+| `calibrate` | The whole calibration and its checks | no |
+| `report` | The report lines and the parameter file | no |
+| `messages` | Topic names, message conversions, sport requests | yes |
+| `bag_source` | `read_bag()`: a bag into the buffer | yes |
+| `live_source` | `run_live()`: drives the robot and fills the buffer | yes |
+| `main` | Settings, the linear flow, Ctrl-C | yes |
+
+CMake builds the ROS-free files as `go2_calibration_core`, the others as `go2_calibration_ros`. The
+executable and the tests link them. `messages.cpp` also turns a `Command` into the Unitree request
+(Move and Euler carry `{"x":..,"y":..,"z":..}` as JSON, the API ids are 1002 BalanceStand, 1003
+StopMove, 1007 Euler, 1008 Move).
+
+## Parameters
+
+All are ROS parameters (`-p name:=value` or `--params-file`). The defaults suit any Go2 with the L1.
+
+| Parameter | Default | Meaning |
+|---|---|---|
+| `bag` | empty | Empty: live run. A bag folder: calibrate from it |
+| `output` | `go2_calibration.yaml` | The file written |
+| `node_name` | `go2_preprocessor` | The node the file is for (its top-level key) |
+| `max_scans` | 100 | Matched scans kept for the lidar mount |
+| `topics.cloud`, `topics.cloud_base`, `topics.imu` | `/utlidar/cloud`, `/utlidar/cloud_base`, `/utlidar/imu` | Lidar cloud, its body-frame copy, lidar IMU |
+| `topics.body_state`, `topics.request`, `topics.phase` | `/sportmodestate`, `/api/sport/request`, `/calibration/phase` | Body IMU, sport commands, phase name |
+| `motion.still_s`, `motion.pause_s` | 30, 3 | s. Range 10 to 300 and 1 to 30 |
+| `motion.spin_rate`, `motion.spin_turns` | 1.0, 2 | rad/s (0.3 to 1.5), turns each way (0.5 to 5) |
+| `motion.tilt_angle`, `motion.tilt_frequency`, `motion.tilt_s` | 0.2, 0.4, 15 | rad (0 to 0.3, 0 skips the tilts), Hz (0.1 to 1), s (2 to 60) |
+| `limits.*` | the table in "Checks" | `min_matched_points`, `max_mount_error_mm`, `max_floor_tilt_deg`, `max_gyro_error`, `min_axis_spread`, `max_still_noise`, `max_leak`, `max_accel_scale_error`, `max_body_tilt_deg` |
+
+A motion value outside its range stops the program before anything moves.
+
+## Output
+
+```yaml
+# Go2 calibration for go2_preprocessor, written by go2_calibration on <date>
+# from <bag or "a live run">.
+# ... the report and the checks, as comments ...
+go2_preprocessor:
+  ros__parameters:
+    lidar_to_body:
+      rotation: [9 values, row-major]
+      translation: [x, y, z]
+    body_imu:
+      gyro_bias: {x, y, z}
+      accel_scale: <about 1.04>
+    range_offset: <metres>
+```
+
+Convention: `p_body = R * p_sensor + t`, `R` row-major, body frame x forward, y left, z up. The body
+IMU needs no rotation: `/sportmodestate` already uses the body axes.
+
+.mermaid
+    flowchart LR
+      yaml[(go2_calibration.yaml)] -->|"lidar_to_body"| cl["cloud: lidar frame to body frame"]
+      yaml -->|"body_imu"| im["IMU: remove bias, scale accelerometer"]
+      yaml -.->|"range_offset"| ro["cloud: every lidar range shortened by it"]
+
+## Build and test
+
+The package needs Unitree's `unitree_api` and `unitree_go` messages. On the robot they come with
+`~/unitree_ros2`:
+
+```bash
+cd ~/unitree_go2
+source ~/unitree_ros2/setup.sh
+colcon build --packages-select go2_calibration
+colcon test --packages-select go2_calibration && colcon test-result --verbose
+```
+
+Laptop (foxy container), once: `sudo apt install ros-foxy-rosidl-generator-dds-idl`, clone
+`https://github.com/unitreerobotics/unitree_ros2`, build only the messages
+(`cd unitree_ros2/cyclonedds_ws && colcon build --packages-select unitree_api unitree_go`), and
+source `cyclonedds_ws/install/local_setup.bash` after `/opt/ros/foxy/setup.bash`.
+
+Tests cover every ROS-free file, the message conversions, and the bag source (on bags the tests
+write). The live source drives a robot and has no unit test. It was checked on the laptop against
+fake topics on an isolated domain (`ROS_LOCALHOST_ONLY=1 ROS_DOMAIN_ID=77`): no robot, a full run,
+and Ctrl-C in the middle of a turn.
+
+## Results on our Go2
+
+Real numbers.
+
+2026-10-13, bags `calib`, `standstill` and `spin` merged with phase messages (all checks PASS):
+
+- `lidar_to_body` = R_y(165 deg) R_z(-123 deg), t = (0.282, 0, 0), error rms 0.000 mm.
+- Floor tilt 0.82 deg. `range_offset` 0.110 m, lidar 0.330 m above the floor.
+- `imu_to_body` is 0.65 deg from `lidar_to_body`: the lidar IMU gyroscope uses the cloud's axes.
+- Lidar IMU `gyro_bias` (0.0028, -0.0055, 0.0006) rad/s. Gravity 154 deg from +z after `imu_to_body`.
+
+2026-10-19, three live calibrations, body IMU:
+
+- `accel_scale` 1.0385 to 1.0420. The still accelerometer reads 9.41 to 9.45 m/s^2.
+- Gravity 1.2 to 2.2 deg from +z. Gyro bias about (-0.010, 0.011, -0.004) rad/s.
+- Only `calibration_03` passed every check. The other two failed the floor tilt (2.05 and 2.83 deg),
+  and `calibration_02` also the still noise.
+
+## Known gaps
+
+- **`range_offset` may depend on the distance.** `go2_preprocessor` subtracts one constant from every
+  range. Over all floor points it is 0.110 m. Over the floor within 1.6 m only, an earlier analysis
+  gave 0.128 m. Check it against a wall at taped distances.
+- **The lidar mount is the firmware's value,** not an independent measurement. The floor tilt is the
+  only independent check.
+- **A bag needs `/calibration/phase`.** Old bags without it must be merged with phase messages first.
+- **The lidar accelerometer is synthetic,** so the gravity direction of the lidar IMU is reported
+  and never used.

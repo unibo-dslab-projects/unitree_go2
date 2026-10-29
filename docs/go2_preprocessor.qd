@@ -1,0 +1,270 @@
+.include {docs}
+
+# go2_preprocessor
+
+`go2_preprocessor` turns the raw Go2 lidar cloud and body IMU into what Point-LIO expects: both in
+the body frame, corrected with the numbers from `go2_calibration`.
+
+**What.** One ROS 2 node (`ros2 run go2_preprocessor go2_preprocessor`). It runs while you map. It
+listens to the raw lidar cloud and to the robot state, fixes both with the calibration file, and
+publishes two clean topics for Point-LIO:
+
+- the cloud, moved into the body frame, with the ranges shortened and the robot's own points removed;
+- the body IMU, with the gyroscope bias removed and the accelerometer scaled to 9.81.
+
+**Why.** Point-LIO builds the map from a cloud and an IMU. They must share one frame and tell the
+truth. The raw Go2 data does neither:
+
+- the cloud is in the lidar frame, and the lidar is mounted upside down and tilted;
+- every lidar range reads about 0.11 m too long;
+- the body IMU has a bias, and a still accelerometer reads 9.44 m/s^2 instead of 9.81;
+- the lidar sees the robot's own back.
+
+Fed raw, Point-LIO draws a tilted and stretched map.
+
+**When.** Every time you map. It is the first node of the mapping chain, and `mapping.launch.py`
+starts it.
+
+## Where it sits
+
+.mermaid
+    flowchart TB
+      subgraph robot["Go2 topics"]
+        cloud["/utlidar/cloud"]
+        state["/sportmodestate"]
+      end
+      robot --> pre[go2_preprocessor]
+      cal[(go2_calibration.yaml)] --> pre
+      box[(preprocessor.yaml)] --> pre
+      launch["mapping.launch.py"] -.->|starts| pre
+      pre -->|"/utlidar/transformed_cloud"| lio[Point-LIO]
+      pre -->|"/utlidar/transformed_imu"| lio
+
+The measured numbers (`lidar_to_body`, `body_imu`, `range_offset`) come from the
+[go2_calibration](./go2_calibration.qd) file. The robot box is written by hand in `preprocessor.yaml`.
+The lidar's own IMU (`/utlidar/imu`) is not used: its accelerometer is synthetic.
+
+## What it changes
+
+| Data | What the node does | Parameter |
+|---|---|---|
+| Cloud, every range | Moves each point back towards the lidar. A point closer than the offset is dropped | `range_offset` |
+| Cloud, every point | Turns it from the lidar frame into the body frame: `p_body = R * p_lidar + t` | `lidar_to_body.*` |
+| Cloud, robot's own points | Drops the points inside a box around the robot's back (body frame) | `robot_box.*` |
+| IMU, gyroscope | Subtracts the still bias | `body_imu.gyro_bias.*` |
+| IMU, accelerometer | Multiplies by the scale that makes a still reading 9.81 | `body_imu.accel_scale` |
+| IMU, repeated samples | Drops a sample whose stamp is not newer than the last one | none |
+
+Intensity, ring and time of each point, and the stamp of the cloud, pass through unchanged.
+
+## Quick start
+
+With the whole mapping chain (preprocessor, Point-LIO, map builder):
+
+```bash
+ros2 launch go2_mapping_bringup mapping.launch.py calibration_file:=$HOME/calibration/current.yaml
+```
+
+`tools/mapping/map.sh` starts the same chain with the current calibration. The node alone:
+
+```bash
+ros2 run go2_preprocessor go2_preprocessor --ros-args \
+    --params-file src/go2_mapping_bringup/config/preprocessor.yaml \
+    --params-file $HOME/calibration/current.yaml
+```
+
+The node name must stay `go2_preprocessor`: both files are keyed by it, and a different name makes
+ROS ignore them without an error.
+
+## How it works
+
+### The code in one picture
+
+Everything is one executable. The files in the box are plain C++ with Eigen (a matrix library),
+except the node, which needs ROS. An arrow means "uses".
+
+.mermaid
+    flowchart TB
+      subgraph EXE["one executable: go2_preprocessor"]
+        main["main: starts the node"]
+        node["preprocessor_node: PreprocessorNode"]
+        conv["convertor: from_message, to_message"]
+        rob["robot_utils: shorten_ranges, lidar_to_body, remove_robot_points, preprocess_cloud"]
+        imu["imu_transform: calibrate_gyro, calibrate_accel"]
+        cal["calibration: rotation_from_parameter, vector_from_parameter"]
+        sch["schemas: Point, PointCloud, Box"]
+      end
+      main --> node
+      node --> conv
+      node --> rob
+      node --> imu
+      node --> cal
+      conv --> sch
+      rob --> sch
+
+### Start-up
+
+The node reads every setting once, when it starts. All of them are read-only parameters: a later
+`ros2 param set` fails with an error instead of being silently ignored.
+
+.mermaid
+    sequenceDiagram
+      participant L as launch file
+      participant R as ROS parameters
+      participant N as PreprocessorNode
+      participant C as calibration.cpp
+      L->>R: preprocessor.yaml, then calibration_file
+      N->>R: declare robot_box.* (6 values)
+      N->>R: declare lidar_to_body.rotation (9) and translation (3)
+      N->>C: rotation_from_parameter(9 values)
+      C-->>N: a rotation matrix, or an error
+      N->>R: declare body_imu.* and range_offset
+      N->>N: log the calibration, one line per value
+      N->>N: create 2 subscriptions and 2 publishers
+
+`rotation_from_parameter` refuses a matrix that is not a rotation (stretched axes, or a mirror image),
+so a typo in the file stops the node at start-up. The log line `calibration:` shows whether the
+file was applied: look for your numbers there.
+
+### A cloud message
+
+.mermaid
+    sequenceDiagram
+      participant G as Go2
+      participant N as on_cloud
+      participant V as convertor
+      participant U as robot_utils
+      participant P as Point-LIO
+      G->>N: /utlidar/cloud
+      N->>V: from_message(message)
+      V-->>N: PointCloud, lidar frame
+      N->>U: preprocess_cloud(cloud, lidar_to_body, robot_box, range_offset)
+      U->>U: 1 shorten_ranges
+      U->>U: 2 lidar_to_body
+      U->>U: 3 remove_robot_points
+      U-->>N: PointCloud, body frame
+      N->>V: to_message(cloud)
+      N->>P: /utlidar/transformed_cloud
+
+The order matters. The robot box is written in the body frame, so the points are turned **before**
+the box is applied. The ranges are shortened first because the offset belongs to the lidar: it is
+measured along each ray from the lidar's centre. A cloud that cannot be read (data shorter than its
+declared size, or a missing field) is logged and skipped.
+
+**Example.** Real run of the actual code, with the calibration of 2026-10-19 (`lidar_to_body` and
+`range_offset` 0.1129 m). The points are made up: they were computed back from a known place in the
+body frame, with every range 0.1129 m too long, the way the lidar reads them.
+
+| Point | True place in the body frame | What the lidar reads (lidar frame) | Without `range_offset` | With `range_offset` 0.1129 |
+|---|---|---|---|---|
+| wall | (2.000, 0.500, -0.100) | (0.500, -1.746, 0.575), 1.905 m | (2.108, 0.532, -0.106) | (2.000, 0.500, -0.100) |
+| floor | (0.800, -0.200, -0.320) | (0.465, -0.284, 0.521), 0.754 m | (0.891, -0.235, -0.376) | (0.800, -0.200, -0.320) |
+| robot's back | (-0.400, 0.000, -0.250) | (-0.455, 0.701, 0.075), 0.839 m | dropped, inside the box | dropped, inside the box |
+
+Without the correction the wall sits 11 cm too far and the floor 5.6 cm too low.
+
+### An IMU message
+
+.mermaid
+    flowchart TD
+      m["/sportmodestate message"] --> s{"stamp newer than the last one?"}
+      s -->|no| drop(["dropped: a repeated sample"])
+      s -->|yes| g["gyro = gyroscope - gyro_bias"]
+      g --> a["accel = accelerometer * accel_scale"]
+      a --> h["Imu message: stamp of the message, frame body"]
+      h --> p(["publish /utlidar/transformed_imu"])
+
+1 to 1.5 % of the messages repeat the previous sample, with the same stamp and the same values. Point-LIO
+would take the copy as one more measurement at the same instant, so the node drops it.
+
+The stamp is the one **inside** the message, which uses the lidar's clock, and not the receive time.
+The orientation and the covariances stay at their defaults ("unknown"): Point-LIO reads only the
+rates and the acceleration.
+
+**Example.** The body IMU at rest on our Go2: the accelerometer reads (-0.146, -0.133, 9.444), with
+length 9.446. The scale `9.81 / 9.446` = 1.0385 turns it into (-0.152, -0.138, 9.808). The small sideways
+parts grow by the same factor, because it is a scale and not a bias.
+
+### Types
+
+.mermaid
+    classDiagram
+      class PreprocessorNode
+      class SensorCalibration
+      class BodyImuCalibration
+      class Box
+      class PointCloud
+      class Point
+      PreprocessorNode *-- SensorCalibration : calibration_
+      PreprocessorNode *-- Box : robot_body_
+      SensorCalibration *-- BodyImuCalibration : body_imu
+      PointCloud *-- Point : points
+
+| File | Does |
+|---|---|
+| `main` | Starts the node and spins |
+| `preprocessor_node` | The two callbacks, the parameters and the topics |
+| `convertor` | `PointCloud2` message to `PointCloud` and back |
+| `robot_utils` | `shorten_ranges`, `lidar_to_body`, `remove_robot_points`, `preprocess_cloud` |
+| `imu_transform` | `calibrate_gyro` and `calibrate_accel` |
+| `calibration` | Turns the parameter numbers into a rotation and a vector, and checks them |
+| `schemas` | `Point`, `PointCloud` and `Box` (`contains` uses strict limits) |
+
+## Parameters
+
+All are read-only ROS parameters, read once at start-up.
+
+| Parameter | Default | Meaning |
+|---|---|---|
+| `lidar_to_body.rotation` | CMU's mount | 9 numbers, row-major. Must be a rotation |
+| `lidar_to_body.translation` | (0, 0, -0.046825) | m, 3 numbers |
+| `body_imu.gyro_bias.x`, `.y`, `.z` | 0 | rad/s, subtracted from the gyroscope |
+| `body_imu.accel_scale` | 1.0 | multiplies the accelerometer |
+| `range_offset` | 0 | m, subtracted from every lidar range |
+| `robot_box.min_x`, `max_x` | -0.7, -0.1 | m, body frame |
+| `robot_box.min_y`, `max_y` | -0.3, 0.3 | m |
+| `robot_box.min_z`, `max_z` | -0.646825, -0.046825 | m |
+
+A name that is not in the table is not an error: ROS ignores it, and the default is used. Check the
+`calibration:` log line.
+
+## Topics
+
+| Direction | Topic | Type | Queue |
+|---|---|---|---|
+| in | `/utlidar/cloud` | `sensor_msgs/PointCloud2` | sensor data QoS |
+| in | `/sportmodestate` | `unitree_go/SportModeState` | sensor data QoS |
+| out | `/utlidar/transformed_cloud` | `sensor_msgs/PointCloud2`, frame `body` | 10 |
+| out | `/utlidar/transformed_imu` | `sensor_msgs/Imu`, frame `body` | 50 |
+
+The topic names are fixed in the code. The output IMU queue is deeper because the IMU is much
+faster than the lidar.
+
+## Build and test
+
+Needs Unitree's `unitree_go` messages. On the robot they come with `~/unitree_ros2`:
+
+```bash
+cd ~/unitree_go2
+source ~/unitree_ros2/setup.sh
+colcon build --packages-select go2_preprocessor
+colcon test --packages-select go2_preprocessor && colcon test-result --verbose
+```
+
+Four test programs, one per file: `test_convertor` (round trip and layout), `test_schemas` (the box
+limits), `test_robot_utils` (turn, filter, and both in order), `test_imu_transform`. Each one
+compiles the file it tests again, because the code lives in the executable and not in a library.
+
+## Known gaps
+
+- **The box is still CMU's.** `robot_box` was made for CMU's `lidar_to_body` translation
+  (0, 0, -0.046825). Ours is (0.282, 0, 0). The comment in `preprocessor.yaml` says to check it in
+  RViz with the real calibration. Not done yet.
+- **No calibration file means CMU's mount.** Started alone without a calibration file, the node uses
+  CMU's rotation and no IMU correction, and the map comes out tilted. `mapping.launch.py` requires
+  `calibration_file`, but `ros2 run` does not. Only the start-up log shows it.
+- **`calibration.cpp` has no unit test.** It is what stops a stretched or mirrored rotation, and
+  the wrong number of values. The four test programs do not include it. `shorten_ranges` has none
+  yet either.
+- **The log line counts range drops as robot points.** `robot points removed` is points in minus
+  points out, so it also counts the points dropped for being closer than `range_offset`.

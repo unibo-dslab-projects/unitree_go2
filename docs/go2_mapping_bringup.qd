@@ -1,0 +1,296 @@
+.include {docs}
+
+# go2_mapping_bringup
+
+`go2_mapping_bringup` starts the mapping chain. It has no code: only launch files that start the
+nodes, and config files that hold their settings.
+
+**What.** A ROS 2 package with three launch files and three config files. One command starts
+`go2_preprocessor`, Point-LIO and `map_builder`, gives each its settings, and connects them with
+the right topic names.
+
+**Why.** The chain has three programs from three places, and they only work together if the details
+match:
+
+- each one needs its own settings file, and a wrong node name makes ROS ignore the file without an error;
+- Point-LIO reads the preprocessor's topics, and `map_builder` reads Point-LIO's topics;
+- the calibration file must reach the preprocessor, or the map comes out tilted;
+- the robot and the laptop must use the same DDS (the layer ROS uses to send messages), or they do not see each other.
+
+This package fixes all of these in one place, so nobody types them by hand.
+
+**When.** Every time you map. `tools/mapping/map.sh` calls it for you.
+
+## Where it sits
+
+.mermaid
+    flowchart TB
+      map["tools/mapping/map.sh"] -->|"ros2 launch"| bring[go2_mapping_bringup]
+      bring -->|starts| pre[go2_preprocessor]
+      bring -->|starts| lio[Point-LIO]
+      bring -->|starts| mb[map_builder]
+      cal[(go2_calibration.yaml)] -->|"calibration_file"| bring
+      cfg[(config folder)] --> bring
+
+The package does not run anything itself. It tells ROS what to start. The three nodes it starts have
+their own pages: [go2_preprocessor](./go2_preprocessor.qd) and [map_builder](./map_builder.qd).
+
+## What is inside
+
+| File | Does |
+|---|---|
+| `launch/mapping.launch.py` | The main one. Starts the preprocessor and Point-LIO, and `map_builder` when it runs on the robot |
+| `launch/map_builder.launch.py` | Starts `map_builder` alone. Included by the other two, not run by hand |
+| `launch/laptop.launch.py` | The laptop side. Starts `map_builder` there when you want it there |
+| `config/preprocessor.yaml` | The robot box of `go2_preprocessor` |
+| `config/point_lio.yaml` | All settings of Point-LIO |
+| `config/map_builder.yaml` | Voxel size and publish rates of `map_builder` |
+| `CMakeLists.txt` | Installs `launch/` and `config/` so ROS can find them |
+| `package.xml` | Lists the four packages it starts as run dependencies |
+
+## Quick start
+
+The normal way, on the robot computer. The script checks the topics, the disk and the calibration,
+and then calls the launch file:
+
+```bash
+tools/mapping/map.sh
+```
+
+The launch file alone:
+
+```bash
+ros2 launch go2_mapping_bringup mapping.launch.py \
+    calibration_file:=$HOME/calibration/current.yaml
+```
+
+`calibration_file` has no default. This is on purpose: without it the preprocessor would use CMU's
+mount values, and the map would come out tilted. Launch stops at once if you forget it.
+
+The same command works live and with `ros2 bag play`. All nodes use the stamps inside the messages
+and not the clock, so there is no `use_sim_time` switch (Foxy's bag player has no `--clock`).
+
+## How it works
+
+### Who starts whom
+
+`mapping.launch.py` is a list of actions. ROS runs them in order. The last one includes another
+launch file, but only when a condition is true.
+
+.mermaid
+    flowchart TB
+      subgraph M["mapping.launch.py"]
+        a1["1 declare calibration_file"]
+        a2["2 declare map_builder_host"]
+        a3["3 set RMW_IMPLEMENTATION"]
+        a4["4 Node go2_preprocessor"]
+        a5["5 Node point_lio"]
+        a6["6 include map_builder.launch.py, if host is robot"]
+      end
+      a1 --> a2 --> a3 --> a4 --> a5 --> a6
+      a6 -.-> B["map_builder.launch.py"]
+      L["laptop.launch.py"] -.->|"if host is laptop"| B
+      B --> N["Node map_builder"]
+
+Both `mapping.launch.py` and `laptop.launch.py` include `map_builder.launch.py`. One of them has the
+condition true, the other false, so `map_builder` starts exactly once. Step 3 is explained in
+[Which DDS](#which-dds).
+
+### What happens at start-up
+
+.mermaid
+    sequenceDiagram
+      participant U as you or map.sh
+      participant L as ros2 launch
+      participant P as go2_preprocessor
+      participant O as point_lio
+      participant B as map_builder
+      U->>L: mapping.launch.py calibration_file:=...
+      L->>L: set RMW_IMPLEMENTATION if the shell has none
+      L->>P: start, parameters from preprocessor.yaml then the calibration file
+      L->>O: start, parameters from point_lio.yaml
+      L->>B: start, parameters from map_builder.yaml and output_dir
+      P-->>P: log the calibration
+      O-->>O: wait for init_map_size points, robot still
+      B-->>B: wait for the first scan and pose
+
+The three nodes start together, not one after the other. Nothing waits for the previous node to be
+ready. This is fine because a node that has no input yet just waits.
+
+Point-LIO needs about 3 s to start, then it takes gravity and its first map from the next seconds.
+The robot must stand still for that time. `map.sh` prints KEEP THE ROBOT STILL for 10 s.
+
+### Where the data flows
+
+The launch files do not carry data. They only set the names so that the nodes find each other.
+
+.mermaid
+    flowchart TB
+      robot["Go2: /utlidar/cloud and /sportmodestate"] --> pre[go2_preprocessor]
+      pre -->|"/utlidar/transformed_cloud"| lio[Point-LIO]
+      pre -->|"/utlidar/transformed_imu"| lio
+      lio -->|"/cloud_registered"| mb[map_builder]
+      lio -->|"/aft_mapped_to_init"| mb
+      mb -->|"map_builder/delta, pose"| viewer["viewer, later"]
+      mb -.->|"Ctrl-C"| files[("map.pcd and trajectory.tum")]
+
+Where the names are set:
+
+| Connection | Set in | How |
+|---|---|---|
+| Go2 to preprocessor | `go2_preprocessor` code | Fixed in the code |
+| Preprocessor to Point-LIO | `point_lio.yaml` | `lid_topic` and `imu_topic` |
+| Point-LIO to `map_builder` | `map_builder.launch.py` | `remappings`: `cloud` becomes `/cloud_registered`, `odom` becomes `/aft_mapped_to_init` |
+
+`map_builder` only knows the short names `cloud` and `odom`. The launch file points them at
+Point-LIO. The frame of `/cloud_registered` is `camera_init`, Point-LIO's world frame.
+
+### How the settings reach each node
+
+.mermaid
+    flowchart LR
+      subgraph files["config files"]
+        c1["preprocessor.yaml: key go2_preprocessor"]
+        c2["calibration yaml: key go2_preprocessor"]
+        c3["point_lio.yaml: key point_lio"]
+        c4["map_builder.yaml: key map_builder"]
+      end
+      c1 --> pre[go2_preprocessor]
+      c2 -->|"overrides"| pre
+      c3 --> lio[point_lio]
+      c4 --> mb[map_builder]
+      arg["output_dir argument"] --> mb
+
+Each file starts with a key: the **node name**. ROS gives the file to the node with that name and
+ignores it for all others. If the key and the name differ, ROS says nothing and the node runs with its
+defaults. This is why the launch file comments say "the node name must stay `go2_preprocessor`".
+
+For the preprocessor two files are given. The second wins when both set a value. The robot box is in
+`preprocessor.yaml` and the measured numbers are in the calibration file, so they never clash.
+
+`output_dir` is not in `map_builder.yaml`. The launch file sets it, because `~` must mean the home
+folder of the machine that runs the node, and that is only known at launch time.
+
+### Robot or laptop
+
+By default everything runs on the robot. You can move `map_builder` to the laptop. Point-LIO then
+sends its scans over Wi-Fi.
+
+.mermaid
+    flowchart TB
+      s{"map_builder_host"}
+      s -->|"robot, the default"| r["robot: mapping.launch.py starts all three nodes"]
+      s -->|"laptop"| l1["robot: mapping.launch.py starts preprocessor and Point-LIO"]
+      s -->|"laptop"| l2["laptop: laptop.launch.py starts map_builder"]
+
+```bash
+# on the robot
+ros2 launch go2_mapping_bringup mapping.launch.py calibration_file:=... map_builder_host:=laptop
+# on the laptop
+ros2 launch go2_mapping_bringup laptop.launch.py map_builder_host:=laptop
+```
+
+The value must be **the same on both machines**. Two commands that say `robot` and `laptop` would
+start two `map_builder`s (the second stops itself) or none. On the laptop with `robot`, the launch
+starts nothing.
+
+### Which DDS
+
+DDS is the layer under ROS that sends the messages. Foxy uses Fast-RTPS by default. The robot uses
+CycloneDDS. Two machines with different DDS do not talk to each other. Point-LIO also hangs on
+Ctrl-C with Fast-RTPS.
+
+Both launch files therefore set `RMW_IMPLEMENTATION` to `rmw_cyclonedds_cpp`, but only if the shell has
+no value yet. A value you set yourself is kept.
+
+### What happens on Ctrl-C
+
+.mermaid
+    sequenceDiagram
+      participant U as you
+      participant L as ros2 launch
+      participant P as go2_preprocessor
+      participant O as point_lio
+      participant B as map_builder
+      U->>L: Ctrl-C
+      L->>P: stop
+      L->>O: stop
+      L->>B: stop
+      B->>B: save_on_exit: write map.pcd and trajectory.tum
+      O-->>L: "terminate called without an active exception"
+
+Ctrl-C reaches every node. `map_builder` writes the map into a new folder
+`<output_dir>/<time of the first scan, UTC>/`. The Point-LIO message is a known flaw of its exit. It
+comes after the map is saved and does not cost data.
+
+## The settings
+
+### Launch arguments
+
+| Argument | Default | In | Meaning |
+|---|---|---|---|
+| `calibration_file` | none, required | `mapping.launch.py` | Absolute path of the `go2_calibration` output |
+| `map_builder_host` | `robot` | `mapping.launch.py`, `laptop.launch.py` | Which machine runs `map_builder`. Same on both |
+| `output_dir` | `~/maps` | `map_builder.launch.py` | Folder where each run gets its sub-folder |
+
+`output_dir` is declared in `map_builder.launch.py`. Passed to `mapping.launch.py` it reaches it.
+
+### point_lio.yaml
+
+Taken from CMU's `utlidar.yaml`. The file has about 60 values, each with a comment. These are the ones
+that differ from CMU or that you may want to change:
+
+| Parameter | Value | Why |
+|---|---|---|
+| `lid_topic`, `imu_topic` | the preprocessor's two topics | Point-LIO reads the corrected data, not the robot's |
+| `extrinsic_T`, `extrinsic_R` | zero, identity | The preprocessor already turned lidar and IMU into one body frame |
+| `init_map_size` | 5000 | About 0.5 s of scans. CMU's 10 builds the first map from one scan, mostly floor, and the gyro bias runs away |
+| `gravity`, `gravity_align` | (0, 0, -9.81), true | The IMU is scaled to 9.81 at rest. Without gravity, Point-LIO reads it as the robot speeding up |
+| `acc_norm` | 9.81 | The accelerometer unit is m/s^2 |
+| `satu_acc` | 40 | The body accelerometer peaks at 29 m/s^2 at foot strikes. CMU's 30 would flag them |
+| `blind` | 0.5 m | Drops lidar points closer than this. It removes the robot's own body |
+| `filter_size_surf`, `filter_size_map` | 0.1 m | Voxel size of the scan and of Point-LIO's map. Smaller means finer, more memory and CPU |
+| `use_imu_as_input` | false | The IMU is a measurement of the filter, which holds up in rough motion |
+| `pcd_save_en` | false | Point-LIO would overwrite one file per run. `map_builder` saves each run in its own folder |
+
+### map_builder.yaml
+
+| Parameter | Value | Meaning |
+|---|---|---|
+| `voxel_size` | 0.05 m | One point per voxel. On `2026-10-19_line_01`: 45,195 points at 0.05, 14,476 at 0.10 |
+| `delta_rate_hz` | 2 | How often new voxels are sent |
+| `pose_rate_hz` | 10 | How often the robot pose is sent |
+| `full_map_rate_hz` | 0 | The whole map on a topic. 0 is off, because every message holds the whole map |
+| `save_on_exit` | true | Save on Ctrl-C, so a run is not lost if nobody called the save service |
+
+Calling the save service and then stopping gives two folders, `<time>` and `<time>_1`.
+
+### preprocessor.yaml
+
+Only the `robot_box`. See [go2_preprocessor](./go2_preprocessor.qd) for what the box does.
+
+## Build and test
+
+The package only copies files. Build it with everything it starts:
+
+```bash
+cd ~/unitree_go2
+source ~/unitree_ros2/setup.sh
+vcs import src < go2.repos
+colcon build --packages-up-to go2_mapping_bringup
+```
+
+`vcs import` fetches Point-LIO, pinned to one commit in `go2.repos`. There are no tests. A launch
+file has no logic worth a unit test, and the full run is tried by `map.sh` on a bag.
+
+## Known gaps
+
+- **No test for the launch files.** A typo in a node name or a topic is found only by running the
+  chain. The last full run was on the laptop with a bag (`2026-10-19_line_01`), not on the robot.
+- **`map_builder_host` must match by hand.** Nothing checks that the two machines have the same value.
+  `map_builder` stops a second copy of itself, but a wrong pair that starts none is not noticed.
+- **The robot box is still CMU's.** See [go2_preprocessor](./go2_preprocessor.qd).
+- **The `RMW_IMPLEMENTATION` default hides a mismatch.** A shell with `rmw_fastrtps_cpp` already set is
+  kept, and the two machines then do not see each other, with no error.
+- **`laptop.launch.py` starts nothing with `robot`.** It is there for the viewer bridge, which is not
+  written yet.

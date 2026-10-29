@@ -132,7 +132,8 @@ go2_preprocessor:
 Convention: `p_body = R * p_sensor + t`, body frame x forward, y left, z up. `body_imu` needs no
 rotation: the `/sportmodestate` IMU already uses the body axes. `accel_scale` is a scale and not a
 bias because standing still shows only the reading along gravity, where the two look the same.
-`go2_preprocessor` does not use `range_offset` yet.
+`go2_preprocessor` moves every lidar point that far back towards the lidar, before `lidar_to_body`;
+a point closer than the offset is dropped.
 
 ## Safety (live run)
 
