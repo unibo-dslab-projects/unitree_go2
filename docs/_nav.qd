@@ -4,3 +4,4 @@
 ###! Packages
 - [go2_calibration](./go2_calibration.qd)
 - [go2_preprocessor](./go2_preprocessor.qd)
+- [go2_mapping_bringup](./go2_mapping_bringup.qd)
