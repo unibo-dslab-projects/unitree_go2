@@ -7,6 +7,15 @@
 
 #include <pcl/io/pcd_io.h>
 #include <pcl/point_types.h>
+#include <pcl/register_point_struct.h>
+
+POINT_CLOUD_REGISTER_POINT_STRUCT(map_builder::Point,
+    (float, x, x)
+    (float, y, y)
+    (float, z, z)
+    (float, intensity, intensity)
+    (std::uint32_t, num_scan_seen, num_scan_seen)
+)
 
 namespace map_builder {
     namespace {
@@ -40,18 +49,10 @@ namespace map_builder {
 
     void save_pcd(const std::filesystem::path &file, const std::vector<Point> &points)
     {
-        pcl::PointCloud<pcl::PointXYZI> cloud;
-        cloud.reserve(points.size());
-
-        for (const auto &point : points) {
-            // PCL 1.10 (Foxy) has no PointXYZI(x, y, z, intensity) constructor.
-            pcl::PointXYZI pcl_point;
-            pcl_point.x = point.x;
-            pcl_point.y = point.y;
-            pcl_point.z = point.z;
-            pcl_point.intensity = point.intensity;
-            cloud.push_back(pcl_point);
-        }
+        pcl::PointCloud<Point> cloud;
+        cloud.points.assign(points.begin(), points.end());
+        cloud.width = static_cast<std::uint32_t>(cloud.points.size());
+        cloud.height = 1;
 
         if (pcl::io::savePCDFileBinary(file.string(), cloud) != 0) {
             throw std::runtime_error("Failed to save PCD file: " + file.string());

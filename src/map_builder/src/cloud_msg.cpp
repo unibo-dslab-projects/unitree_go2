@@ -1,5 +1,6 @@
 #include "map_builder/cloud_msg.hpp"
 
+#include <cstdint>
 #include <stdexcept>
 
 #include <sensor_msgs/point_cloud2_iterator.hpp>
@@ -42,11 +43,12 @@ namespace map_builder {
         cloud.header = header;
 
         sensor_msgs::PointCloud2Modifier modifier(cloud);
-        modifier.setPointCloud2Fields(4,
+        modifier.setPointCloud2Fields(5,
             "x", 1, PointField::FLOAT32,
             "y", 1, PointField::FLOAT32,
             "z", 1, PointField::FLOAT32,
-            "intensity", 1, PointField::FLOAT32
+            "intensity", 1, PointField::FLOAT32,
+            "num_scan_seen", 1, PointField::UINT32
         );
         modifier.resize(points.size());
         cloud.is_dense = true;
@@ -59,16 +61,19 @@ namespace map_builder {
         sensor_msgs::PointCloud2Iterator<float> y(cloud, "y");
         sensor_msgs::PointCloud2Iterator<float> z(cloud, "z");
         sensor_msgs::PointCloud2Iterator<float> intensity(cloud, "intensity");
+        sensor_msgs::PointCloud2Iterator<std::uint32_t> num_scan_seen(cloud, "num_scan_seen");
 
         for (const auto &point : points) {
             *x = point.x;
             *y = point.y;
             *z = point.z;
             *intensity = point.intensity;
+            *num_scan_seen = point.num_scan_seen;
             ++x;
             ++y;
             ++z;
             ++intensity;
+            ++num_scan_seen;
         }
 
         return cloud;

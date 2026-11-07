@@ -32,8 +32,8 @@ int main(int argc, char** argv)
     }
 
     map_builder::VoxelMap map(std::stod(argv[2]));
-    const std::size_t first = map.insert(points);
-    const std::size_t second = map.insert(points);
+    const std::size_t first = map.insert(points, 0);
+    const std::size_t second = map.insert(points, 1);
     std::fprintf(stdout, "Inserted %zu points, voxels: %zu, second inserted: %zu\n", points.size(), first, second);
 
     return EXIT_SUCCESS;

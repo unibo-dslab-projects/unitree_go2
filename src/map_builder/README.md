@@ -5,14 +5,15 @@ Collects Point-LIO's output into one map and one path, and saves both to disk.
 - **In:** `/cloud_registered` (each scan, already placed in the map frame `camera_init`) and
   `/aft_mapped_to_init` (the robot's pose). The launch file connects them to the node's `cloud`
   and `odom` inputs.
-- **Map:** a voxel map. Space is cut into cubes of `voxel_size` (5 cm); each cube keeps the first
-  point that lands in it and ignores the rest. Point-LIO sends the same wall again with every scan,
-  so this removes the repeats.
+- **Map:** a voxel map. Space is cut into cubes of `voxel_size` (5 cm). Point-LIO sends the same
+  wall again with every scan; each cube keeps the mean of all the points that land in it, and
+  `num_scan_seen`, the number of scans that hit it. A wall seen from many places scores high, noise
+  and people passing by score 1 or 2, so a consumer can drop them.
 - **Out, while running:**
 
 | Name | Kind | What |
 |---|---|---|
-| `/map_builder/delta` | topic, `go2_mapping_msgs/MapDelta` | the cubes that are new since the last delta, 2 times a second |
+| `/map_builder/delta` | topic, `go2_mapping_msgs/MapDelta` | the cubes that received a point since the last delta (new or updated), 2 times a second |
 | `/map_builder/pose` | topic, `geometry_msgs/PoseStamped` | the newest robot pose, 10 times a second |
 | `/map_builder/full_map` | topic, `sensor_msgs/PointCloud2` | the whole map; off unless `full_map_rate_hz` > 0 |
 | `/map_builder/get_map` | service, `go2_mapping_msgs/GetMap` | the whole map now, plus the `seq` of the last delta inside it |
@@ -22,7 +23,8 @@ Collects Point-LIO's output into one map and one path, and saves both to disk.
   `map_builder.yaml`): one folder per run inside `output_dir`, named after the time of the first
   scan in UTC, for example `~/maps/2026-10-19T14:35:23/`. Saving twice in the same run, or
   replaying the same bag again, gives `..._1`, `..._2`.
-  - `map.pcd`: one point per cube, fields `x y z intensity`, metres, frame `camera_init`.
+  - `map.pcd`: one point per cube (the mean), fields `x y z intensity` (float) and `num_scan_seen`
+    (uint32), metres, frame `camera_init`.
   - `trajectory.tum`: one line per pose, `stamp x y z qx qy qz qw` (TUM format, stamp in seconds).
 
 Settings are in `go2_mapping_bringup/config/map_builder.yaml`. That file is copied at build time:

@@ -11,8 +11,8 @@ map, and on Ctrl-C it writes `map.pcd` and `trajectory.tum`.
 
 **Why.** Point-LIO sends the same wall again with every scan, about 10 times a second. Saved as they
 come, the points would pile up and the file would be huge. Point-LIO also does not save anything by
-default. `map_builder` removes the repeats and keeps the result, so a walk ends with two small files
-that the rest of the thesis can use.
+default. `map_builder` folds the repeats into one mean point per cube and counts how many scans saw
+each cube, so a walk ends with two small files that the rest of the thesis can use.
 
 **When.** Every time you map. `mapping.launch.py` starts it, on the robot or on the laptop.
 
@@ -140,8 +140,8 @@ The `run_id` tells a viewer that a new map has begun. The check after 2 s is the
       C-->>N: list of Point x y z intensity
       N->>N: first scan: keep frame_id and the stamp
       N->>N: later scan with another frame_id: warn and drop it
-      N->>V: insert(points)
-      V-->>N: how many points were new
+      N->>V: insert(points, scan number)
+      V-->>N: how many cubes were new
       N->>N: remember the stamp of this scan
 
 A cloud that cannot be read (its data is shorter than `width * height * point_step`, or a field is
@@ -158,10 +158,11 @@ skipped.
       p["a point x, y, z"] --> f{"finite?"}
       f -->|no| skip(["skip"])
       f -->|yes| k["key = floor of x, y, z divided by voxel_size"]
-      k --> e{"key already in the map?"}
-      e -->|yes| ig(["ignore the point"])
-      e -->|no| add["store the point under the key"]
-      add --> pend["also append it to the pending list"]
+      k --> sum["add x, y, z, intensity to the cube's sums; point_count + 1 (a new cube starts at 0)"]
+      sum --> pend["put the key on the pending list, if not there yet"]
+      pend --> s{"first point of this scan in the cube?"}
+      s -->|no| done(["done"])
+      s -->|yes| seen["num_scan_seen + 1"]
 
 `floor`, not a plain cast, because a cast rounds towards 0 and puts -0.03 and +0.03 in the same cube.
 The map is a hash map (`unordered_map`) with the key hashed from three large primes, a method called
@@ -169,13 +170,17 @@ spatial hashing.
 
 **Example.** The numbers are made up. The voxel size is 0.05 m.
 
-| Point (x, y, z) | x, y, z divided by 0.05 | Key | Result |
-|---|---|---|---|
-| (1.23, -0.03, 0.51) | 24.6, -0.6, 10.2 | (24, -1, 10) | new, stored |
-| (1.24, -0.04, 0.52) | 24.8, -0.8, 10.4 | (24, -1, 10) | same cube, ignored |
-| (1.26, -0.03, 0.51) | 25.2, -0.6, 10.2 | (25, -1, 10) | new, stored |
+| Scan | Point (x, y, z) | x, y, z divided by 0.05 | Key | Result |
+|---|---|---|---|---|
+| 1 | (1.23, -0.03, 0.51) | 24.6, -0.6, 10.2 | (24, -1, 10) | new cube: mean (1.23, -0.03, 0.51), num_scan_seen 1 |
+| 1 | (1.24, -0.04, 0.52) | 24.8, -0.8, 10.4 | (24, -1, 10) | same scan: mean (1.235, -0.035, 0.515), num_scan_seen stays 1 |
+| 2 | (1.22, -0.02, 0.53) | 24.4, -0.4, 10.6 | (24, -1, 10) | new scan: mean (1.23, -0.03, 0.52), num_scan_seen 2 |
+| 2 | (1.26, -0.03, 0.51) | 25.2, -0.6, 10.2 | (25, -1, 10) | new cube, num_scan_seen 1 |
 
-The first point of a cube wins. It is not averaged with the later ones.
+Each cube keeps sums, not points, so its memory stays the same however long the walk. The sums are
+`double`: a `float` sum of a thousand points 10 m away loses millimetres. The mean is sent as
+`float`, nudged by one step if rounding put it on the edge of the next cube, so a receiver that
+computes `floor(mean / voxel_size)` finds the same cube.
 
 **Real numbers.** On the straight walk `2026-10-19_line_01` (5.4 m), voxel 0.05 m gives about 44,700
 points. Voxel 0.10 m gave 14,476 points on the same walk, and 0.05 m gave 45,195 on an earlier run.
@@ -198,13 +203,17 @@ Nothing is sent from the callbacks. They only store. Three timers send what was 
       Note over N: every 0.1 s, pose timer
       N->>W: /map_builder/pose, if there is a new one
       Note over N: every 0.5 s, delta timer
-      N->>V: last_voxel_points_added
-      V-->>N: the pending points, and the list is emptied
+      N->>V: take_changed_voxels
+      V-->>N: the mean of each pending cube, and the list is emptied
       N->>W: /map_builder/delta with run_id and seq
 
-The delta holds **only the new cubes**, one point each, so it stays small. `seq` counts 1, 2, 3 and
-so on inside one run. `stamp` is the newest scan inside the delta. A delta with no new points is not
-sent, so a still robot sends nothing.
+The delta holds every cube that received a point since the last delta, new or updated, once each,
+with its current mean and `num_scan_seen`. A viewer replaces the cube it already has, so its copy
+matches the robot's map one delta late. On the 2026-11-03 room walk this is about 6,200 cubes per
+second, about 120 KB/s. Sending only when `num_scan_seen` doubles (1, 2, 4, 8, ...) would cut it to
+about 1,560 cubes per second, at the cost of a viewer count up to half the true one; that is the
+fallback if the link cannot carry the full rate. `seq` counts 1, 2, 3 and so on inside one run.
+`stamp` is the newest scan inside the delta. A delta with no changed cube is not sent.
 
 ### How a viewer keeps in step
 
@@ -276,7 +285,7 @@ exit is logged and does not crash the node.
 | `main` | Starts the node, spins, then calls `save_at_exit` |
 | `node` | The two callbacks, the timers, the services, the single-instance check |
 | `cloud_msg` | `PointCloud2` message to a list of `Point` and back |
-| `voxel_map` | `Point`, `VoxelKey`, the hash, and `VoxelMap` with `insert`, `last_voxel_points_added`, `all` |
+| `voxel_map` | `Point`, `VoxelKey`, the hash, `VoxelStatistics`, and `VoxelMap` with `insert`, `take_changed_voxels`, `all` |
 | `trajectory` | `Pose`, and `Trajectory` with `add` and `write_tum` |
 | `map_io` | The run folder name, the PCD writer, the TUM writer |
 | `voxel_count` | Offline check of a PCD file, not part of the node |
@@ -287,7 +296,8 @@ a `PointCloud2` of the new points) and `GetMap.srv` (no request, answers with `r
 
 ## Output files
 
-`map.pcd` has one point per cube, binary, fields `x y z intensity`, in metres, frame `camera_init`.
+`map.pcd` has one point per cube (the mean), binary, fields `x y z intensity` (float) and
+`num_scan_seen` (uint32), in metres, frame `camera_init`.
 
 `trajectory.tum` has one line per pose: `stamp x y z qx qy qz qw`. The stamp is in seconds with 9
 digits after the dot. Example line, made up:
@@ -363,10 +373,10 @@ size. Check `filter_size_surf` and `filter_size_map` in `point_lio.yaml`.
 
 - **No unit tests.** `VoxelMap`, `Trajectory` and `map_io` are plain C++ and easy to test. The CMake
   file has the lines ready but commented out. The only checks are the bag replay and `voxel_count`.
-- **The first point of a cube stays, the rest are lost.** There is no average. A noisy first point
-  stays in the map for the whole run.
-- **Nothing is ever removed.** A person who walks through the scene leaves points that stay in the
-  map. Point-LIO has no loop closing either, so drift is not corrected later.
+- **Nothing is ever removed.** A person who walks through the scene leaves cubes that stay in the
+  map, with a low `num_scan_seen`: dropping them is up to the consumer. Point-LIO has no loop
+  closing either, so drift is not corrected later, and the mean of a cube seen on two passes that
+  disagree lands between them.
 - **A pose can be published and not saved.** `on_odometry` ignores the answer of `Trajectory::add`.
   A pose that is not newer than the last is skipped in the file but still goes to `/map_builder/pose`.
 - **A save is lost if the node is killed.** The map is only in memory. `save_on_exit` works on
