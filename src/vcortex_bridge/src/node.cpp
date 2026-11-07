@@ -15,12 +15,12 @@ namespace vcortex_bridge {
         using go2_mapping_msgs::srv::GetMap;
 
         // the ingest format, as the backend's protocol/ingest.hpp defines it
-        constexpr int kProtocol = 1;
+        constexpr int kProtocol = 2;
         constexpr std::uint8_t kMapFrame = 1;
         constexpr std::uint8_t kDeltaFrame = 2;
         constexpr std::uint8_t kPosesFrame = 3;
         constexpr std::size_t kHeaderSize = 16;
-        constexpr std::size_t kVoxelRecordSize = 16;
+        constexpr std::size_t kVoxelRecordSize = 20;
         constexpr std::size_t kPoseRecordSize = 24;
 
         constexpr std::chrono::milliseconds kMapCheckPeriod{200};
@@ -55,12 +55,14 @@ namespace vcortex_bridge {
             sensor_msgs::PointCloud2ConstIterator<float> y(cloud, "y");
             sensor_msgs::PointCloud2ConstIterator<float> z(cloud, "z");
             sensor_msgs::PointCloud2ConstIterator<float> intensity(cloud, "intensity");
+            sensor_msgs::PointCloud2ConstIterator<std::uint32_t> num_scan_seen(cloud, "num_scan_seen");
             for (std::size_t at = kHeaderSize; at < bytes.size(); at += kVoxelRecordSize) {
                 put(bytes, at, *x);
                 put(bytes, at + 4, *y);
                 put(bytes, at + 8, *z);
                 put(bytes, at + 12, *intensity);
-                ++x, ++y, ++z, ++intensity;
+                put(bytes, at + 16, *num_scan_seen);
+                ++x, ++y, ++z, ++intensity, ++num_scan_seen;
             }
             return bytes;
         }
