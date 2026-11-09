@@ -86,6 +86,14 @@ namespace go2_calibration {
         case Action::stop_move:
             request.header.identity.api_id = kStopMoveApiId;
             break;
+        case Action::pose_on:
+            request.header.identity.api_id = kPoseApiId;
+            request.parameter = "{\"data\":true}";
+            break;
+        case Action::pose_off:
+            request.header.identity.api_id = kPoseApiId;
+            request.parameter = "{\"data\":false}";
+            break;
         case Action::balance_stand:
             request.header.identity.api_id = kBalanceStandApiId;
             break;

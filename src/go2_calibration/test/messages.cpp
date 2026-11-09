@@ -81,6 +81,18 @@ TEST(BodyAccel, ReadsTheImuStateAccelerometer)
     EXPECT_TRUE(body_accel(state).isApprox(Eigen::Vector3d(-0.25, 0.5, 9.5)));
 }
 
+// As Unitree's SportClient::Pose: {"data":true} or {"data":false}.
+TEST(ToRequest, PoseCarriesItsFlag)
+{
+    const auto on = to_request(Command{Action::pose_on});
+    EXPECT_EQ(on.header.identity.api_id, kPoseApiId);
+    EXPECT_EQ(on.parameter, "{\"data\":true}");
+
+    const auto off = to_request(Command{Action::pose_off});
+    EXPECT_EQ(off.header.identity.api_id, kPoseApiId);
+    EXPECT_EQ(off.parameter, "{\"data\":false}");
+}
+
 TEST(ToRequest, StopMoveAndBalanceStandCarryNoParameter)
 {
     const auto stop = to_request(Command{});
