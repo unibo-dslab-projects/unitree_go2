@@ -31,6 +31,7 @@ namespace go2_calibration {
     constexpr std::int64_t kStopMoveApiId = 1003;
     constexpr std::int64_t kEulerApiId = 1007;
     constexpr std::int64_t kMoveApiId = 1008;
+    constexpr std::int64_t kPoseApiId = 1028;
 
     std::int64_t to_nanoseconds(const builtin_interfaces::msg::Time &stamp);
 

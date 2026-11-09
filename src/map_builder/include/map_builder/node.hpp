@@ -54,6 +54,7 @@ namespace map_builder {
 
         std::uint32_t run_id_ = 0;
         std::uint64_t seq_ = 0;
+        std::uint64_t scans_received_ = 0;
         std::string frame_id_;
         std::int64_t first_stamp_ns_ = 0;
         builtin_interfaces::msg::Time newest_stamp_;

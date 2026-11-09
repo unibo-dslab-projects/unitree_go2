@@ -47,16 +47,22 @@ If a check fails, the report shows FAIL and **no file is written**.
 calibrate, print the report, write the file if every check passed. The two sources make the same
 calls on the buffer, so the calibration never knows where its data came from.
 
-The live run drives the robot with the sport API through these phases (defaults, about 97 s):
+The live run drives the robot with the sport API through these phases, in this order (defaults,
+about 100 s). Euler tilts the body only in pose mode, so the tilts are wrapped in Pose on and off.
+The robot reports its state in `error_code` of `/sportmodestate` (`mode` stays 0): 100 normal
+stand, 1002 locked stand, 1091 pose. On 2026-11-09 BalanceStand reached pose once in nine runs and
+StandUp never did; Move did nothing in 2 of 3 runs without a BalanceStand before it.
 
 | Phase | Command | Default | Used for |
 |---|---|---|---|
 | `still` | StopMove | 30 s | bias, lidar mount, floor, range offset |
-| `spin_left`, `spin_right` | Move(0, 0, +-1 rad/s) | 2 turns each (12.6 s) | IMU rotation, leak |
-| `pause` | StopMove | 3 s | (dropped) |
-| `balance_stand` | BalanceStand, sent once | 1 s | (dropped) |
+| `pose_on` | Pose(true), sent once | 1 s | (dropped) |
 | `tilt_pitch`, `tilt_roll` | Euler, 0.2 rad sine at 0.4 Hz | 15 s each | IMU rotation about the other two axes |
 | `level` | Euler(0, 0, 0) | 2 s | (dropped) |
+| `pose_off` | Pose(false), sent once | 1 s | (dropped) |
+| `balance_stand` | BalanceStand, sent once | 1 s | (dropped) |
+| `spin_left`, `spin_right` | Move(0, 0, +-1 rad/s) | 2 turns each (12.6 s) | IMU rotation, leak |
+| `pause` | StopMove | 3 s, after `pose_off` and after each spin | (dropped) |
 
 It publishes the phase name on `/calibration/phase` at 50 Hz, so a bag recorded alongside can be
 replayed later with `bag:=`.

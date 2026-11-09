@@ -135,7 +135,7 @@ namespace map_builder {
             return;
         }
 
-        const std::size_t added = map_.insert(points);
+        const std::size_t added = map_.insert(points, ++scans_received_);
         newest_stamp_ = message->header.stamp;
 
         RCLCPP_INFO_THROTTLE(get_logger(), *get_clock(), kLogPeriodMs, "Voxels %zu, added %zu points from cloud", map_.size(), added);
@@ -161,7 +161,7 @@ namespace map_builder {
 
     void MapBuilderNode::publish_delta()
     {
-        std::vector<Point> points = map_.last_voxel_points_added();
+        std::vector<Point> points = map_.take_changed_voxels();
         if (points.empty()) {
             return;
         }

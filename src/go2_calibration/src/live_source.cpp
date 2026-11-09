@@ -137,7 +137,10 @@ namespace go2_calibration {
                         RCLCPP_INFO(node.get_logger(), "phase %s, %.1f s", phase.name.c_str(), phase.duration_s);
                     }
                     // a mode switch is asked once; motion commands are repeated on every command tick.
-                    if (phase.action != Action::balance_stand || new_phase) {
+                    const bool is_mode_switch = phase.action == Action::balance_stand ||
+                                                phase.action == Action::pose_on ||
+                                                phase.action == Action::pose_off;
+                    if (!is_mode_switch || new_phase) {
                         send(setpoint->command);
                     }
                     set_phase(phase.name);

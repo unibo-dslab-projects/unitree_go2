@@ -41,6 +41,8 @@ TEST(UseOf, MapsPhaseNamesToTheirUse)
     EXPECT_EQ(use_of("tilt_pitch"), Use::moving);
     EXPECT_EQ(use_of("tilt_roll"), Use::moving);
     EXPECT_EQ(use_of("pause"), Use::none);
+    EXPECT_EQ(use_of("pose_on"), Use::none);
+    EXPECT_EQ(use_of("pose_off"), Use::none);
     EXPECT_EQ(use_of("balance_stand"), Use::none);
     EXPECT_EQ(use_of("level"), Use::none);
     EXPECT_EQ(use_of("waiting"), Use::none);
@@ -48,18 +50,21 @@ TEST(UseOf, MapsPhaseNamesToTheirUse)
     EXPECT_EQ(use_of(""), Use::none);
 }
 
-TEST(BuildSequence, DefaultIsStillThenSpinsThenTilts)
+TEST(BuildSequence, DefaultIsStillThenTiltsThenSpins)
 {
     const std::vector<Phase> phases = build_sequence(SequenceSettings{});
 
     EXPECT_EQ(
         names(phases), (std::vector<std::string>{
-                           "still", "spin_left", "pause", "spin_right", "pause", "balance_stand", "tilt_pitch",
-                           "tilt_roll", "level", "pause"}));
+                           "still", "pose_on", "tilt_pitch", "tilt_roll", "level", "pose_off", "pause",
+                           "balance_stand", "spin_left", "pause", "spin_right", "pause"}));
+    EXPECT_EQ(phases[1].action, Action::pose_on);
+    EXPECT_EQ(phases[5].action, Action::pose_off);
+    EXPECT_EQ(phases[7].action, Action::balance_stand);
     // 2 turns at 1 rad/s take 4 pi s in each direction.
-    EXPECT_NEAR(phases[1].duration_s, 4.0 * kPi, 1e-9);
-    // still 30 + 3 pauses of 3 + 2 spins + balance 1 + 2 tilts of 15 + level 2.
-    EXPECT_NEAR(total_duration_s(phases), 30.0 + 9.0 + 8.0 * kPi + 1.0 + 30.0 + 2.0, 1e-9);
+    EXPECT_NEAR(phases[8].duration_s, 4.0 * kPi, 1e-9);
+    // still 30 + 3 mode switches of 1 + 2 tilts of 15 + level 2 + 3 pauses of 3 + 2 spins.
+    EXPECT_NEAR(total_duration_s(phases), 30.0 + 3.0 + 30.0 + 2.0 + 9.0 + 8.0 * kPi, 1e-9);
 }
 
 TEST(BuildSequence, ZeroTiltAngleLeavesTheTiltsOut)
@@ -69,7 +74,7 @@ TEST(BuildSequence, ZeroTiltAngleLeavesTheTiltsOut)
 
     EXPECT_EQ(
         names(build_sequence(settings)),
-        (std::vector<std::string>{"still", "spin_left", "pause", "spin_right", "pause"}));
+        (std::vector<std::string>{"still", "balance_stand", "spin_left", "pause", "spin_right", "pause"}));
 }
 
 TEST(CheckSettings, AcceptsTheDefaults)
@@ -119,12 +124,12 @@ TEST(SetpointAt, StandsStillThenTurnsLeftThenRight)
     EXPECT_EQ(still->phase, 0U);
     EXPECT_EQ(still->command.action, Action::stop_move);
 
-    const auto left = setpoint_at(phases, start_of(phases, 1) + 1.0);
+    const auto left = setpoint_at(phases, start_of(phases, 8) + 1.0);
     ASSERT_TRUE(left.has_value());
     EXPECT_EQ(left->command.action, Action::move);
     EXPECT_EQ(left->command.z, 1.0);
 
-    const auto right = setpoint_at(phases, start_of(phases, 3) + 1.0);
+    const auto right = setpoint_at(phases, start_of(phases, 10) + 1.0);
     ASSERT_TRUE(right.has_value());
     EXPECT_EQ(right->command.z, -1.0);
 }
@@ -134,13 +139,13 @@ TEST(SetpointAt, TiltsFollowASine)
 {
     const std::vector<Phase> phases = build_sequence(SequenceSettings{});
 
-    const auto pitch = setpoint_at(phases, start_of(phases, 6) + 0.625);
+    const auto pitch = setpoint_at(phases, start_of(phases, 2) + 0.625);
     ASSERT_TRUE(pitch.has_value());
     EXPECT_EQ(pitch->command.action, Action::euler);
     EXPECT_NEAR(pitch->command.y, 0.2, 1e-9);
     EXPECT_EQ(pitch->command.x, 0.0);
 
-    const auto roll = setpoint_at(phases, start_of(phases, 7) + 0.625);
+    const auto roll = setpoint_at(phases, start_of(phases, 3) + 0.625);
     ASSERT_TRUE(roll.has_value());
     EXPECT_NEAR(roll->command.x, 0.2, 1e-9);
     EXPECT_EQ(roll->command.y, 0.0);

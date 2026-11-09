@@ -8,7 +8,7 @@
 namespace go2_calibration {
     namespace {
     constexpr double kPi = 3.14159265358979323846;
-    constexpr double kBalanceStandS = 1.0;  // time for the mode switch before the tilts
+    constexpr double kModeSwitchS = 1.0;  // the state code changes within 10 ms; margin to settle
     constexpr double kLevelS = 2.0;         // body back to level before the last pause
 
     // Written so that NaN fails too: every comparison with NaN is false.
@@ -39,6 +39,13 @@ namespace go2_calibration {
         Phase phase = still(name, duration_s);
         phase.action = Action::move;
         phase.yaw_rate = yaw_rate;
+        return phase;
+    }
+
+    Phase mode_switch(const std::string &name, Action action)
+    {
+        Phase phase = still(name, kModeSwitchS);
+        phase.action = action;
         return phase;
     }
 
@@ -86,20 +93,22 @@ namespace go2_calibration {
 
         std::vector<Phase> phases;
         phases.push_back(still("still", settings.still_s));
+        if (settings.tilt_angle > 0.0) {
+            // Euler tilts only in pose mode (state code 1091). BalanceStand reached it once in nine
+            // runs on 2026-11-09 and StandUp never did, so the tilts ask for it by name
+            phases.push_back(mode_switch("pose_on", Action::pose_on));
+            phases.push_back(tilt("tilt_pitch", settings.tilt_s, 0.0, settings.tilt_angle, settings.tilt_frequency));
+            phases.push_back(tilt("tilt_roll", settings.tilt_s, settings.tilt_angle, 0.0, settings.tilt_frequency));
+            phases.push_back(tilt("level", kLevelS, 0.0, 0.0, 0.0));
+            phases.push_back(mode_switch("pose_off", Action::pose_off));
+            phases.push_back(still("pause", settings.pause_s));
+        }
+        // without it Move did nothing in 2 of 3 runs; after it, the spins ran in all 4
+        phases.push_back(mode_switch("balance_stand", Action::balance_stand));
         phases.push_back(spin("spin_left", spin_s, settings.spin_rate));
         phases.push_back(still("pause", settings.pause_s));
         phases.push_back(spin("spin_right", spin_s, -settings.spin_rate));
         phases.push_back(still("pause", settings.pause_s));
-
-        if (settings.tilt_angle > 0.0) {
-            Phase balance = still("balance_stand", kBalanceStandS);
-            balance.action = Action::balance_stand;
-            phases.push_back(balance);
-            phases.push_back(tilt("tilt_pitch", settings.tilt_s, 0.0, settings.tilt_angle, settings.tilt_frequency));
-            phases.push_back(tilt("tilt_roll", settings.tilt_s, settings.tilt_angle, 0.0, settings.tilt_frequency));
-            phases.push_back(tilt("level", kLevelS, 0.0, 0.0, 0.0));
-            phases.push_back(still("pause", settings.pause_s));
-        }
         return phases;
     }
 

@@ -9,6 +9,8 @@ namespace go2_calibration {
     // which Unitree sport API call to send.
     enum class Action {
         stop_move,      // stand still
+        pose_on,        // pose mode, the only one where Euler tilts the body; sent once per phase
+        pose_off,       // back to the normal stand, where Move works; sent once per phase
         balance_stand,  // balance-stand mode, which body tilts (Euler) need; sent once per phase
         move,           // Move(vx, vy, vyaw)
         euler,          // Euler(roll, pitch, yaw): body angles, the feet stay in place
@@ -63,8 +65,8 @@ namespace go2_calibration {
     // throws std::invalid_argument naming the first setting outside its range.
     void check_settings(const SequenceSettings &settings);
 
-    // still, spin_left, pause, spin_right, pause; then, when tilt_angle > 0, balance_stand,
-    // tilt_pitch, tilt_roll, level, pause. Checks the settings first.
+    // still; then, when tilt_angle > 0, pose_on, tilt_pitch, tilt_roll, level, pose_off, pause;
+    // then balance_stand, spin_left, pause, spin_right, pause. Checks the settings first.
     std::vector<Phase> build_sequence(const SequenceSettings &settings);
 
     double total_duration_s(const std::vector<Phase> &phases);

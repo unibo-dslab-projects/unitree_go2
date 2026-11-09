@@ -12,6 +12,6 @@ uint32 run_id
 # Ignore every MapDelta with seq <= this value, because it is already in `points`.
 uint64 seq
 
-# Every voxel of the map so far, in the map frame (camera_init).
-# Fields x y z intensity, float32 (16 bytes per point).
+# Every voxel of the map so far, in the map frame (camera_init), as in MapDelta:
+# the mean point of each voxel, fields x y z intensity float32, num_scan_seen uint32 (20 bytes per point).
 sensor_msgs/PointCloud2 points
